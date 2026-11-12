@@ -19,7 +19,7 @@ const NEW_ENTRANT_ONLY =
 const OTHER_REGION =
   /\b(asean|sids|small island|caribbean|pacific islands?|latin america|south asia|central asia|middle east|mena|balkans?|eastern partnership|western europe|north america)\b/i;
 const OTHER_NATIONALS =
-  /\bfor (nigerian|ghanaian|indian|pakistani|bangladeshi|indonesian|filipino|vietnamese|egyptian|ethiopian|ugandan|tanzanian|rwandan|south african|zimbabwean|zambian|malawian|cameroonian|american|canadian|british|european) (students|nationals|citizens|youth|women|graduates)\b/i;
+  /\bfor (young |aspiring |talented )?(nigerian|ghanaian|indian|pakistani|bangladeshi|indonesian|filipino|vietnamese|egyptian|ethiopian|ugandan|tanzanian|rwandan|south african|zimbabwean|zambian|malawian|cameroonian|american|canadian|british|european)s?( (students|nationals|citizens|youths?|women|graduates|professionals))?\b/i;
 
 /** Requires an already-completed bachelor's degree (Master's level etc.). */
 const NEEDS_DEGREE =

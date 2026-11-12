@@ -91,6 +91,11 @@ describe("eligibility from real cases", () => {
     }
     expect(prefilter(lead({ type: "remote_work", title: "Junior React Developer", location: "Worldwide" })).keep).toBe(true);
   });
+  it("live run 3: 'for young Nigerians' and non-tech 'Web3 Business Development'", () => {
+    expect(checkEligibility(extracted({ title: "The AltBank Sultan of Sales Graduate Trainee Programme 2026 for young Nigerians" }), lead(), profile, NOW).verdict).toBe("ineligible");
+    expect(prefilter(lead({ type: "remote_work", title: "Web3 Business Development", location: "Worldwide" })).keep).toBe(false);
+    expect(prefilter(lead({ type: "remote_work", title: "Software Engineer", location: "Worldwide" })).keep).toBe(true);
+  });
   it("for-other-nationals titles are excluded", () => {
     expect(checkEligibility(extracted({ title: "Scholarship for Nigerian students 2027" }), lead(), profile, NOW).verdict).toBe("ineligible");
   });

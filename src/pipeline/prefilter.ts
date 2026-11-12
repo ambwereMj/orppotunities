@@ -36,6 +36,10 @@ const OTHER_FIELD =
   /\b(law|legal|medicine|medical|nursing|dental|pharmacy|journalis|media|film|music|arts?|art|poetry|writing contest|creative writing|theolog|divinity|fashion|dyslexia|teacher|teaching|education|agricultur|veterinar|public health|social work|humanities|history|literature|sports?|football|tourism|hospitality|nutrition|midwif|psycholog|law school|mba|business school|accounting|finance|marketing)\b/i;
 const TECH_HINT = /engineer|electr|computer|software|ict|tech|stem|science|data|ai\b|digital|cyber|robot|embedded|code|coding|developer|innovation/i;
 
+/** Non-technical roles that mention tech words ("Web3 Business Development", "Software Sales"). */
+const NON_TECH_ROLE =
+  /\b(business development|sales|account (executive|manager)|marketing|recruit(er|ing)|customer success|customer support|support specialist|patient|nurse|clinical|accountant|bookkeep|legal|counsel|copywriter|community manager|social media|operations manager|hr\b|human resources|finance|payroll)\b/i;
+
 const SENIOR = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|manager|architect)\b/i;
 
 /** Location strings that clearly exclude someone living in Kenya. */
@@ -65,6 +69,7 @@ export function prefilter(lead: Lead): PrefilterResult {
   if ((lead.type === "scholarship" || lead.type === "program") && OTHER_FIELD.test(lead.title) && !TECH_HINT.test(lead.title)) {
     return { keep: false, reason: "another field" };
   }
+  if (lead.type === "remote_work" && NON_TECH_ROLE.test(lead.title)) return { keep: false, reason: "non-technical role" };
   if ((lead.type === "remote_work" || lead.type === "internship") && SENIOR.test(lead.title)) {
     return { keep: false, reason: "senior role" };
   }
