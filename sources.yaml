@@ -40,7 +40,7 @@ sources:
     url: https://www.afterschoolafrica.com/feed/
     type: scholarship
     aggregator: true
-    enabled: true
+    enabled: false   # robots.txt forbids automated reading — respected
   - id: opportunities_circle
     kind: rss
     url: https://www.opportunitiescircle.com/feed/
@@ -78,7 +78,7 @@ sources:
     url: https://www.ke.emb-japan.go.jp/itpr_en/education.html
     type: scholarship
     match: [MEXT, scholarship, monbukagakusho]
-    enabled: true
+    enabled: false   # site blocks bots (HTTP 403) — check by hand: ke.emb-japan.go.jp (MEXT opens ~April)
   - id: mastercard_foundation
     kind: page
     url: https://mastercardfdn.org/en/what-we-do/our-programs/mastercard-foundation-scholars-program/
@@ -90,7 +90,7 @@ sources:
     url: https://www.studyinkorea.go.kr/en/sub/gks/allnew_invite.do
     type: scholarship
     match: [GKS, scholarship, undergraduate, graduate]
-    enabled: true
+    enabled: false   # page moved (HTTP 404) — needs the new address
   - id: csc_china
     kind: page
     url: https://www.campuschina.org/scholarships/index.html
@@ -132,7 +132,7 @@ sources:
     url: https://www.oist.jp/research-internship-program
     type: internship
     match: [internship, apply]
-    enabled: true
+    enabled: false   # page moved (HTTP 404) — needs the new address
   - id: kaust_vsrp
     kind: page
     url: https://vsrp.kaust.edu.sa/
@@ -144,7 +144,7 @@ sources:
     url: https://www.huawei.com/en/sustainability/the-latest/stories/seeds-for-the-future
     type: program
     match: [seeds for the future, kenya, apply]
-    enabled: true
+    enabled: false   # page moved (HTTP 404) — needs the new address
 
   # ── Remote job boards (official APIs/feeds) ───────────────────────────
   - id: remoteok
@@ -156,12 +156,12 @@ sources:
     kind: remotive
     url: https://remotive.com/api/remote-jobs?category=software-dev
     type: remote_work
-    enabled: true
+    enabled: false   # robots.txt forbids automated reading of its API — respected
   - id: remotive_qa
     kind: remotive
     url: https://remotive.com/api/remote-jobs?category=qa
     type: remote_work
-    enabled: true
+    enabled: false   # robots.txt forbids automated reading of its API — respected
   - id: wwr_programming
     kind: rss
     url: https://weworkremotely.com/categories/remote-programming-jobs.rss
@@ -206,25 +206,25 @@ sources:
     url: https://www.safaricom.co.ke/careers
     type: internship
     match: [intern, graduate, engineer, software, talent]
-    enabled: true
+    enabled: false   # site blocks bots (HTTP 403) — check by hand: safaricom.co.ke/careers
   - id: kengen_careers
     kind: page
     url: https://www.kengen.co.ke/index.php/careers.html
     type: internship
     match: [intern, attachment, graduate, engineer]
-    enabled: true
+    enabled: false   # page moved (HTTP 404) — needs the new address
   - id: kplc_careers
     kind: page
     url: https://www.kplc.co.ke/careers
     type: internship
     match: [intern, attachment, graduate, engineer]
-    enabled: true
+    enabled: false   # site blocks bots (HTTP 403) — check by hand: kplc.co.ke
   - id: equity_careers
     kind: page
     url: https://equitygroupholdings.com/ke/careers
     type: internship
     match: [intern, graduate, software, engineer, technology]
-    enabled: true
+    enabled: false   # page moved (HTTP 404) — needs the new address
   - id: alx_africa
     kind: page
     url: https://www.alxafrica.com/

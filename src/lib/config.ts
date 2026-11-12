@@ -80,6 +80,6 @@ export const settings = {
   digestSize: 10,
   extractModel: "claude-haiku-5-5",
   draftModel: "claude-opus-5-5",
-  maxExtractionsPerRun: 120,
+  maxExtractionsPerRun: 180,
   dryRun: process.env.DRY_RUN === "1",
 };

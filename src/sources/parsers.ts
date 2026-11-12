@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { Lead, SourceConfig } from "../types.js";
+import { inferType } from "../pipeline/prefilter.js";
 
 /** Pure parsers: raw response text -> leads. Tested against fixtures in test/fixtures. */
 
@@ -16,7 +17,7 @@ export function parseRss(xml: string, src: SourceConfig): Lead[] {
     if (!title || !link) return;
     leads.push({
       sourceId: src.id,
-      type: src.type,
+      type: src.aggregator ? inferType(strip(title), src.type) : src.type,
       title: strip(title),
       url: link,
       aggregator: !!src.aggregator,
@@ -122,16 +123,29 @@ export function parseHimalayas(json: string, src: SourceConfig): Lead[] {
     }));
 }
 
-/** Watched official page: every link whose text or href matches a keyword becomes a lead. */
+/** Link texts that are site navigation, not a specific opportunity. */
+const NAV =
+  /^(home|about( us)?|contact( us)?|news|blog|events?|faq|faqs|login|log in|sign in|register|search|menu|privacy|terms|cookies?|careers?|jobs|more|read more|learn more|click here|here|back|next|previous|alumni|our (team|story|impact)|who we are|find (a|your) .*|explore( the series)?|quality standards|application guidance|guidance|resources?|resource hub|archive|.*archive|scholarship holders|participating countries|partners?|media|press|downloads?|publications?|annual report|donate|subscribe|newsletter|share|facebook|twitter|linkedin|instagram|youtube)$/i;
+
+/** A link must look like a specific opportunity. */
+const OPP_WORD =
+  /scholarship|fellowship|internship|intern\b|programme|program\b|call for|award|grant|bursary|vacanc|position|trainee|attachment|graduate|summer|research|apply|application|admission|exchange|competition|hackathon|mentorship|bootcamp/i;
+
+/**
+ * Watched official page: links that match the source's keywords AND look like a specific opportunity
+ * become leads. Navigation links are ignored. The index page itself is not a lead.
+ */
 export function parsePage(html: string, pageUrl: string, src: SourceConfig): Lead[] {
   const $ = cheerio.load(html);
+  $("nav, header, footer, [role=navigation], .menu, .navbar, .breadcrumb, .breadcrumbs").remove();
   const kws = (src.match ?? []).map((k) => k.toLowerCase());
-  const seen = new Set<string>();
+  const seen = new Set<string>([pageUrl.replace(/\/$/, "")]);
   const leads: Lead[] = [];
   $("a[href]").each((_, a) => {
     const text = $(a).text().replace(/\s+/g, " ").trim();
     const href = $(a).attr("href")!;
-    if (!text || text.length < 6 || href.startsWith("#") || /^(mailto|tel|javascript):/i.test(href)) return;
+    if (!text || text.length < 12 || text.length > 200 || href.startsWith("#") || /^(mailto|tel|javascript):/i.test(href)) return;
+    if (NAV.test(text) || /\b(archive|archives|all news|past (winners|recipients|scholars))\b/i.test(text) || /\.(pdf|docx?|xlsx?|zip|jpg|png)$/i.test(href)) return;
     let abs: string;
     try {
       abs = new URL(href, pageUrl).toString();
@@ -140,13 +154,11 @@ export function parsePage(html: string, pageUrl: string, src: SourceConfig): Lea
     }
     const hay = `${text} ${href}`.toLowerCase();
     if (kws.length && !kws.some((k) => hay.includes(k))) return;
-    if (seen.has(abs)) return;
-    seen.add(abs);
-    leads.push({ sourceId: src.id, type: src.type, title: text.slice(0, 200), url: abs, aggregator: false, watched: true });
+    if (!OPP_WORD.test(text)) return;
+    const key = abs.replace(/[#?].*$/, "").replace(/\/$/, "");
+    if (seen.has(key)) return;
+    seen.add(key);
+    leads.push({ sourceId: src.id, type: src.type, title: text, url: abs, aggregator: false, watched: true });
   });
-  // Always include the watched page itself so a change on it is re-checked.
-  if (!seen.has(pageUrl)) {
-    leads.unshift({ sourceId: src.id, type: src.type, title: $("title").text().trim() || src.id, url: pageUrl, aggregator: false, watched: true });
-  }
-  return leads.slice(0, 25);
+  return leads.slice(0, 15);
 }

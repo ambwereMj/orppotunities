@@ -15,6 +15,16 @@ const BARS_CURRENT_ENROLLMENT =
 const NEW_ENTRANT_ONLY =
   /(first[- ]year|1st[- ]year|incoming|prospective|new(ly admitted)? (students|undergraduates|entrants)|high school (graduates|leavers)|secondary school (graduates|leavers)|kcse (graduates|leavers|candidates)|completed (high|secondary) school (in|within))/i;
 
+/** Programme tied to a region/country group that excludes Kenya (e.g. Chevening ASEAN, SIDS). */
+const OTHER_REGION =
+  /\b(asean|sids|small island|caribbean|pacific islands?|latin america|south asia|central asia|middle east|mena|balkans?|eastern partnership|western europe|north america)\b/i;
+const OTHER_NATIONALS =
+  /\bfor (nigerian|ghanaian|indian|pakistani|bangladeshi|indonesian|filipino|vietnamese|egyptian|ethiopian|ugandan|tanzanian|rwandan|south african|zimbabwean|zambian|malawian|cameroonian|american|canadian|british|european) (students|nationals|citizens|youth|women|graduates)\b/i;
+
+/** Requires an already-completed bachelor's degree (Master's level etc.). */
+const NEEDS_DEGREE =
+  /hold (a|an) (first|undergraduate|bachelor'?s|honours) degree|(have|has) (completed|obtained|earned) (a|an|their|your) (first|undergraduate|bachelor'?s) degree|bachelor'?s degree (is )?(required|by)|recent graduates?|graduated (in|within|between)/i;
+
 const NON_ENGLISH_LANG = /\b(german|french|japanese|korean|chinese|mandarin|russian|turkish|hungarian|spanish|portuguese|arabic|dutch|swedish|italian)\b/i;
 
 function ageOn(dob: string, date = new Date()): number {
@@ -51,6 +61,11 @@ export function checkEligibility(x: Extracted, lead: Lead, p: Profile, now = new
   } else {
     worst("check", `nationality rule unclear: ${nat}`);
   }
+  const regionText = `${x.title} ${lead.title} ${nat}`;
+  if (OTHER_REGION.test(regionText) && !/africa|kenya|worldwide|all countries/i.test(regionText)) {
+    worst("ineligible", `programme for another region (${regionText.match(OTHER_REGION)![0]})`);
+  }
+  if (OTHER_NATIONALS.test(regionText)) worst("ineligible", `for other nationals: ${regionText.match(OTHER_NATIONALS)![0]}`);
   if ((lead.type === "remote_work" || lead.type === "internship") && geoLockedLocation(lead.location)) {
     worst("ineligible", `location restricted: ${lead.location}`);
   }
@@ -68,7 +83,10 @@ export function checkEligibility(x: Extracted, lead: Lead, p: Profile, now = new
 
   // Enrollment rules — truthfully: currently enrolled at university since Sept 2024.
   const rule = x.enrollmentRule.value ?? "";
-  if (BARS_CURRENT_ENROLLMENT.test(rule)) worst("ineligible", `bars current university students: "${rule}"`);
+  const degreeText = `${rule} ${x.gradeRequirement.value ?? ""} ${x.studyLevels.quote ?? ""}`;
+  if (lead.type !== "remote_work" && NEEDS_DEGREE.test(degreeText)) {
+    worst("ineligible", "needs a completed bachelor's degree (saved for later)");
+  } else if (BARS_CURRENT_ENROLLMENT.test(rule)) worst("ineligible", `bars current university students: "${rule}"`);
   else if (NEW_ENTRANT_ONLY.test(rule)) worst("check", `new entrants only? You're a current JKUAT student: "${rule}"`);
 
   // Field

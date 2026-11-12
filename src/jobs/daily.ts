@@ -8,7 +8,7 @@ import { log } from "../lib/log.js";
 import { Store } from "../db/store.js";
 import { fetchAll } from "../sources/index.js";
 import { dedupeLeads, hash, normalizeUrl } from "../pipeline/dedupe.js";
-import { prefilter } from "../pipeline/prefilter.js";
+import { prefilter, roundRobin } from "../pipeline/prefilter.js";
 import { pool, processLead } from "../pipeline/process.js";
 import { sendMessage } from "../telegram/api.js";
 import { sendInstantAlerts } from "./alerts.js";
@@ -38,7 +38,8 @@ async function main() {
 
   const pre = fresh.map((l) => ({ l, r: prefilter(l) }));
   await store?.markSeen(pre.filter((p) => !p.r.keep).map((p) => ({ url_hash: hashOf(p.l), url: p.l.url, outcome: "prefiltered" })));
-  const candidates = pre.filter((p) => p.r.keep).map((p) => p.l).slice(0, settings.maxExtractionsPerRun);
+  // Round-robin across sources (max 12 each) so one big source cannot use up the whole run.
+  const candidates = roundRobin(pre.filter((p) => p.r.keep).map((p) => p.l), 12, settings.maxExtractionsPerRun);
   log.info("candidates", { unique: unique.length, fresh: fresh.length, toVerify: candidates.length });
 
   const stored: Opportunity[] = [];

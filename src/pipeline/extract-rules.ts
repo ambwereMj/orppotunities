@@ -102,7 +102,7 @@ export function extractFields(ss: string[]): Evidenced<string[]> {
 }
 
 export function extractEnrollment(ss: string[]): Evidenced<string | null> {
-  const s = first(ss, /(currently|already) (enrolled|studying|registered)|must not (be )?(enrolled|hold)|first[- ]year|incoming (students|freshmen)|newly admitted|high school (graduates|leavers)|secondary school (graduates|leavers)|prior (university|tertiary)|enrolled (in|at) (a|an) (university|degree)/i);
+  const s = first(ss, /(currently|already) (enrolled|studying|registered)|must not (be )?(enrolled|hold)|first[- ]year|incoming (students|freshmen)|newly admitted|high school (graduates|leavers)|secondary school (graduates|leavers)|prior (university|tertiary)|enrolled (in|at) (a|an) (university|degree)|hold (a|an) (first|undergraduate|bachelor'?s|honours) degree|(have|has) (completed|obtained|earned) (a|an|their|your) (first|undergraduate|bachelor'?s) degree|bachelor'?s degree (is )?(required|by)|recent graduates?|graduated (in|within|between)/i);
   return s ? { value: s, quote: s } : none(null);
 }
 
@@ -179,14 +179,25 @@ export function extractRemote(text: string, lead: Lead): boolean | null {
   return null;
 }
 
-/** Heuristic: does the page describe one specific opportunity? */
-export function looksLikeOpportunity(text: string): boolean {
-  const cues = [/apply|application/i, /deadline|closing date|close/i, /eligib|requirement|criteria|who can/i, /benefit|stipend|salary|tuition|funding|covers/i];
-  return cues.filter((c) => c.test(text)).length >= 2;
+/** Titles of general/index pages that are not one specific opportunity. */
+const GENERIC_TITLE =
+  /^(why |what is|about|how to|faq|frequently asked|find |explore|search|archive|news|blog|home|resources?|guidance|quality standards|criteria|participating countries|scholarship holders|our programs?|programmes?$|scholarships?$|internships?$|opportunities$)/i;
+
+/** Heuristic: does the page describe one specific opportunity? Needs an apply cue plus 2 more. */
+export function looksLikeOpportunity(text: string, title = ""): boolean {
+  if (GENERIC_TITLE.test(title.trim())) return false;
+  const apply = /\b(apply|application|applicants?)\b/i.test(text);
+  const cues = [
+    /deadline|closing date|applications? (close|open)|apply by|due date/i,
+    /eligib|requirement|criteria|who can apply|must (be|have|hold)/i,
+    /benefit|stipend|salary|tuition|funding|covers|allowance|paid/i,
+    /duration|start date|programme dates|program dates|weeks|months/i,
+  ];
+  return apply && cues.filter((c) => c.test(text)).length >= 2;
 }
 
 export function extractWithRules(pageText: string, officialUrl: string, lead: Lead, now = new Date()): Extracted | null {
-  if (!looksLikeOpportunity(pageText)) return null;
+  if (!looksLikeOpportunity(pageText, lead.title)) return null;
   const ss = sentences(pageText);
   const gpa = extractGpa(ss);
   const { funding, details } = extractFunding(ss, lead.type);
