@@ -14,11 +14,11 @@ A personal agent that runs in the cloud every day. It finds scholarships, intern
 ```
 06:00 EAT  GitHub Actions: daily finder
            sources.yaml → fetch (robots.txt, 5s/host, retries) → de-duplicate → keyword pre-filter
-           → aggregator listing resolved to the OFFICIAL page → AI extraction (every fact must quote
-           the page, unquoted facts are dropped) → eligibility rules → scam rules → payout route
+           → aggregator listing resolved to the OFFICIAL page → free rule-based reader (every fact
+           is quoted from a sentence on the page; nothing found = unknown, never guessed) → eligibility rules → scam rules → payout route
            → 0–100 score → Supabase → instant alerts (score ≥ 80 or deadline ≤ 7 days)
 07:00 EAT  daily digest with Apply / Save / Skip / Not interested buttons
-hourly     instant alerts, deadline reminders (14/7/3/1 days), broken-source alerts, Sunday 19:00 summary
+every 3h   instant alerts, deadline reminders (14/7/3/1 days), broken-source alerts, Sunday 19:00 summary
 any time   Telegram webhook on Vercel: /saved /deadlines /tracker /status /pause /resume
 ```
 
@@ -28,7 +28,7 @@ any time   Telegram webhook on Vercel: /saved /deadlines /tracker /status /pause
 | `profile.yaml` | **Private, git-ignored.** Your facts. Cloud copy is the `PROFILE_YAML_B64` secret |
 | `src/sources/` | Source plugins (RSS, RemoteOK, Remotive, Himalayas, watched official pages) |
 | `src/pipeline/` | dedupe, prefilter, resolve, extract, eligibility, scam, payout, rank |
-| `src/jobs/` | `daily`, `digest`, `hourly`, `vault-cli` |
+| `src/jobs/` | `daily`, `digest`, `hourly` (every 3h), `vault-cli` |
 | `api/telegram.ts` | Vercel webhook for buttons and commands |
 | `supabase/migrations/` | Database schema |
 | `test/` | Tests for parsers, filters, scam rules, payout, ranking, vault and the pipeline |
@@ -38,13 +38,13 @@ any time   Telegram webhook on Vercel: /saved /deadlines /tracker /status /pause
 - **Partial funding is never shown as full.** "Full" means the page states that tuition *and* a living stipend are covered.
 - **Truthful enrollment.** Scholarships that bar current university students are excluded. "New entrants only" items are marked for a manual check.
 - **Scam rules.** Items asking for fees, PINs or upfront payment are rejected. Guaranteed acceptance, unrealistic pay, chat-only recruiters and free-mail contacts are flagged with the reason.
-- **Spending cap.** AI calls stop when `AI_MONTHLY_CAP_USD` (default $10) is reached, and you get a Telegram message.
+- **$0 to run.** Everything is on free tiers. AI reading is off (`AI_MONTHLY_CAP_USD=0`); if it is ever approved, it stops at the cap.
 - **Kill switch.** `/pause` in Telegram stops every job.
 
 ## Commands
 ```
 npm test            # run the test suite
-npm run dry-run     # run the finder locally without Telegram or database (needs ANTHROPIC_API_KEY)
+npm run dry-run     # run the finder locally without Telegram or database
 npm run vault -- put path/to/your_CV.pdf cv    # encrypt and store a document
 ```
 

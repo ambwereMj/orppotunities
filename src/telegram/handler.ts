@@ -1,5 +1,5 @@
 import { Store, type OppRow } from "../db/store.js";
-import { settings } from "../lib/config.js";
+import { aiEnabled, settings } from "../lib/config.js";
 import { answerCallback, editButtons, sendMessage } from "./api.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
 
@@ -100,7 +100,7 @@ export async function handleUpdate(u: TgUpdate, store = new Store(), ownerChatId
       const spent = await store.aiSpentThisMonth();
       const broken = await store.brokenSources(3);
       return sendMessage(
-        `${paused ? "⏸ Paused" : "▶️ Running"}\nAI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}\nBroken sources: ${broken.length ? broken.join(", ") : "none"}`,
+        `${paused ? "⏸ Paused" : "▶️ Running"}\n${aiEnabled() ? `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}` : "Mode: free (no AI, $0)"}\nBroken sources: ${broken.length ? broken.join(", ") : "none"}`,
       );
     }
     case "/saved":

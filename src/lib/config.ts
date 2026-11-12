@@ -68,8 +68,12 @@ export function env(name: string, required = true): string {
   return v ?? "";
 }
 
+/** AI extraction is used only when a key is present AND the owner approved a budget above $0. */
+export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY && Number(process.env.AI_MONTHLY_CAP_USD ?? 0) > 0;
+
 export const settings = {
-  aiMonthlyCapUsd: Number(process.env.AI_MONTHLY_CAP_USD ?? 10),
+  /** Free by default: 0 = no AI at all (rule-based extraction). Raise only with the owner's approval. */
+  aiMonthlyCapUsd: Number(process.env.AI_MONTHLY_CAP_USD ?? 0),
   /** Score at/above which an instant alert is sent. */
   instantAlertScore: 80,
   urgentDays: 7,

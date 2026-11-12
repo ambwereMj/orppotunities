@@ -26,8 +26,11 @@ vi.mock("../src/lib/ai.js", async (orig) => {
   };
 });
 
+const AI_ENV = { ANTHROPIC_API_KEY: "test", AI_MONTHLY_CAP_USD: "10" };
+
 beforeEach(() => {
   process.env.HTTP_MIN_GAP_MS = "0";
+  for (const [k, v] of Object.entries(AI_ENV)) vi.stubEnv(k, v);
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: URL | string) => {
@@ -61,7 +64,10 @@ beforeEach(() => {
     remote: null,
   };
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe("processLead end-to-end (network & AI faked)", () => {
   it("resolves aggregator -> official page, verifies facts, rejects region-locked item", async () => {
@@ -81,6 +87,24 @@ describe("processLead end-to-end (network & AI faked)", () => {
     expect(out.opp.eligibility.verdict).toBe("ineligible"); // North America/UK only — correctly excluded
     expect(out.opp.extracted.funding.value).toBe("partial"); // never shown as full
     expect(budget.spentRun).toBeCloseTo(0.0008, 5);
+  });
+
+  it("free mode ($0 cap) uses the rule-based reader and spends nothing", async () => {
+    vi.stubEnv("AI_MONTHLY_CAP_USD", "0");
+    const { processLead } = await import("../src/pipeline/process.js");
+    const { Budget } = await import("../src/lib/ai.js");
+    const budget = new Budget(0, 0);
+    const out = await processLead(
+      { sourceId: "agg", type: "scholarship", title: "DAAD RISE 2027", url: "https://aggregator.example/daad-rise-2027/", aggregator: true },
+      profile,
+      budget,
+      {},
+    );
+    expect(budget.spentRun).toBe(0);
+    expect(out.kind).toBe("stored");
+    if (out.kind !== "stored") return;
+    expect(out.opp.extracted.deadline.value).toBe("2026-12-15");
+    expect(out.opp.extracted.funding.value).toBe("partial"); // stipend only, no tuition stated
   });
 
   it("stops spending once the monthly cap is reached", async () => {

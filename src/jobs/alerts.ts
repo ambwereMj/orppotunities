@@ -1,8 +1,8 @@
 /**
- * Runs hourly: instant alerts, deadline reminders (14/7/3/1 days for saved items),
+ * Runs every 3 hours: instant alerts, deadline reminders (14/7/3/1 days for saved items),
  * broken-source alerts, and the Sunday-evening weekly summary.
  */
-import { settings } from "../lib/config.js";
+import { aiEnabled, settings } from "../lib/config.js";
 import { log } from "../lib/log.js";
 import { Store } from "../db/store.js";
 import { daysUntil } from "../pipeline/eligibility.js";
@@ -69,7 +69,7 @@ async function weeklySummary(store: Store) {
       `Found this week: ${s.found_this_week ?? 0}`,
       `Saved: ${s.saved ?? 0} · Preparing: ${s.preparing ?? 0} · Waiting on you: ${s.waiting_on_me ?? 0}`,
       `Submitted: ${s.submitted ?? 0} · Interview: ${s.interview ?? 0} · Results: ${s.result ?? 0}`,
-      `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}`,
+      aiEnabled() ? `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}` : "Mode: free (no AI, $0)",
     ].join("\n"),
   );
   await store.setSetting("last_weekly", week);

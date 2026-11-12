@@ -1,10 +1,11 @@
-import type { Profile } from "../lib/config.js";
+import { aiEnabled, type Profile } from "../lib/config.js";
 import { politeFetch, RobotsDisallowed } from "../lib/http.js";
 import { BudgetExceeded, type Budget } from "../lib/ai.js";
 import { log } from "../lib/log.js";
 import type { Lead, Opportunity } from "../types.js";
 import { checkEligibility } from "./eligibility.js";
 import { extract } from "./extract.js";
+import { extractWithRules } from "./extract-rules.js";
 import { oppKey } from "./dedupe.js";
 import { payoutRoute } from "./payout.js";
 import { rank, type Weights } from "./rank.js";
@@ -45,7 +46,9 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     const pageText = htmlToText(html);
     if (pageText.length < 200) return { kind: "not_opportunity", reason: "page has too little text" };
 
-    const x = await extract(pageText, officialUrl, { title: lead.title, type: lead.type }, budget);
+    const x = aiEnabled()
+      ? await extract(pageText, officialUrl, { title: lead.title, type: lead.type }, budget)
+      : extractWithRules(pageText, officialUrl, lead);
     if (!x) return { kind: "not_opportunity", reason: "not a specific opportunity" };
 
     const eligibility = checkEligibility(x, lead, profile);
