@@ -10,8 +10,12 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [daily, digest, alerts]
+        options: [daily, digest, alerts, setup]
         default: daily
+      webhook_base_url:
+        description: "Only for setup: the Vercel address, e.g. https://opportunity-agent.vercel.app"
+        required: false
+        default: "https://opportunity-agent.vercel.app"
 
 concurrency:
   group: agent-${{ github.event.schedule || inputs.job }}
@@ -20,13 +24,14 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30   # keeps monthly usage inside the 2,000 free minutes
+    timeout-minutes: 30
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}   # optional; the bot learns it from your /start
+      WEBHOOK_BASE_URL: ${{ inputs.webhook_base_url }}
       PROFILE_YAML_B64: ${{ secrets.PROFILE_YAML_B64 }}
       AI_MONTHLY_CAP_USD: ${{ vars.AI_MONTHLY_CAP_USD || '0' }}   # 0 = free mode, no AI
     steps:

@@ -6,7 +6,7 @@ The database is already created: a Supabase project called **opportunity-agent**
 
 ## 1. Make the GitHub repo private (2 min)
 GitHub → `ambwereMj/orppotunities` → **Settings → General → Danger Zone → Change visibility → Private**.
-Private repos also avoid GitHub switching off scheduled jobs after 60 days without commits.
+(We made it **public** instead, because the account's free Actions minutes were used up. Public repos have unlimited free minutes; your secrets stay hidden. GitHub pauses schedules in public repos after 60 days without commits and emails you first: re-enable them with one tap in Actions.)
 
 ## 2. Telegram bot (3 min)
 1. In Telegram, open **@BotFather** → `/newbot` → pick a name. Copy the **token**.
@@ -19,25 +19,27 @@ The agent reads official pages with free built-in rules, so no AI key or credit 
 supabase.com → project **opportunity-agent** → **Project Settings → API Keys**. Copy the **secret / service_role** key.
 The URL is `https://ikjpoquqklswkuqftnuq.supabase.co`.
 
-## 5. Vercel (Telegram buttons and commands) (5 min)
-1. vercel.com → **Add New → Project** → import `ambwereMj/orppotunities` (Framework: Other).
-2. Under **Environment Variables**, add: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` (any long random string you make up). Leave `TELEGRAM_CHAT_ID` empty for now.
-3. Deploy. Then connect Telegram to it by opening this URL once in a browser, filled in:
-   `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<your-vercel-domain>/api/telegram&secret_token=<TELEGRAM_WEBHOOK_SECRET>`
-4. Send `/start` to your bot. It replies with your **chat id**. Add it in Vercel as `TELEGRAM_CHAT_ID` and redeploy. From then on, the bot only answers you.
+## 5. Vercel (Telegram buttons and commands)
+The Vercel project **opportunity-agent** is already created and linked to this repo, and `SUPABASE_URL` is already set.
+You add the two secrets: vercel.com → **opportunity-agent** → **Settings → Environment Variables**:
 
-## 6. GitHub Actions secrets (5 min)
-Repo → **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Secret | Value |
+| Key | Value |
 |---|---|
-| `SUPABASE_URL` | `https://ikjpoquqklswkuqftnuq.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | from step 4 |
-| `TELEGRAM_BOT_TOKEN` | from step 2 |
-| `TELEGRAM_CHAT_ID` | from step 5 |
-| `PROFILE_YAML_B64` | contents of `vault/PROFILE_YAML_B64.txt` (prepared for you; never committed) |
+| `SUPABASE_SERVICE_ROLE_KEY` | the Supabase secret key |
+| `TELEGRAM_BOT_TOKEN` | the BotFather token |
 
-Then go to **Actions → Opportunity Agent → Run workflow → daily** for a first run. After that it runs on its own every day.
+Then **Deployments → ⋯ on the latest → Redeploy**.
+
+## 6. GitHub Actions secrets
+Repo → **Settings → Secrets and variables → Actions**: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`, `PROFILE_YAML_B64`.
+No chat id is needed: the bot registers you as its owner when you press **Start**. It only ever answers that chat.
+
+## 6b. Connect the bot (one tap)
+GitHub → **Actions → Opportunity Agent → Run workflow** → job **setup** → **Run workflow**.
+This points the bot at Vercel. The webhook password is derived from the bot token, so there is nothing to copy.
+If you had already pressed Start, you get "You're registered as the owner". Otherwise send `/start` now.
+
+Then run the workflow again with job **daily** for the first search, and **digest** to receive the results.
 
 ## 7. Put your CV in the encrypted vault (optional now, needed in Phase 3)
 On a computer with the repo:
@@ -54,7 +56,7 @@ Files are encrypted on your machine before upload. If you lose the passphrase, t
 ## Cost: $0
 | Service | Free-tier limit | Our usage |
 |---|---|---|
-| GitHub Actions (private repo) | 2,000 min/month | ≈ 600–1,000 min (daily finder ≤ 30 min, digest, check every 3 h). With no card on file, GitHub stops jobs at the limit; it never charges |
+| GitHub Actions (public repo) | unlimited | daily finder ≤ 30 min, digest, check every 3 h |
 | Supabase Free | 500 MB database, 1 GB storage | a few MB. Daily activity keeps the project from pausing |
 | Vercel Hobby | free for personal use | one small webhook function |
 | Telegram Bot API | free | — |

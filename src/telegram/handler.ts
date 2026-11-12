@@ -30,22 +30,27 @@ function listRows(rows: OppRow[], empty: string) {
 }
 
 export interface TgUpdate {
-  message?: { chat: { id: number }; text?: string };
+  message?: { chat: { id: number; type?: string }; text?: string };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
 }
 
-export async function handleUpdate(u: TgUpdate, store = new Store(), ownerChatId = process.env.TELEGRAM_CHAT_ID ?? "") {
+export async function handleUpdate(u: TgUpdate, store = new Store()) {
   const chatId = u.message?.chat.id ?? u.callback_query?.message?.chat.id;
   if (chatId === undefined) return;
+  const isPrivate = u.message ? u.message.chat.type === "private" : true;
 
-  // First-time setup: tell the owner their chat id. Everyone else is ignored.
-  if (!ownerChatId) {
-    if (u.message?.text?.startsWith("/start")) {
-      await sendMessage(`Your chat id is <code>${chatId}</code>. Save it as TELEGRAM_CHAT_ID.`, undefined, String(chatId));
+  // First-time setup: the first private /start claims the bot. After that, everyone else is ignored.
+  let owner = process.env.TELEGRAM_CHAT_ID || (await store.getSetting<string>("owner_chat_id"));
+  if (!owner) {
+    if (isPrivate && u.message?.text?.startsWith("/start")) {
+      await store.setSetting("owner_chat_id", String(chatId));
+      owner = String(chatId);
+      await sendMessage(`✅ You're registered as the owner. Only you can use this bot.\n\n${HELP}`, undefined, String(chatId));
     }
     return;
   }
-  if (String(chatId) !== String(ownerChatId)) return;
+  if (String(chatId) !== String(owner)) return;
+  const reply = (text: string, buttons?: Parameters<typeof sendMessage>[1]) => sendMessage(text, buttons, String(chatId));
 
   if (u.callback_query) {
     const [action, key] = (u.callback_query.data ?? "").split(":");
@@ -53,7 +58,7 @@ export async function handleUpdate(u: TgUpdate, store = new Store(), ownerChatId
     if (!row) return answerCallback(u.callback_query.id, "Item not found");
     if (action === "src") {
       await answerCallback(u.callback_query.id, "Sources");
-      return sendMessage(formatEvidence(row));
+      return reply(formatEvidence(row));
     }
     if (!STATUS[action]) return answerCallback(u.callback_query.id, "Unknown action");
     await store.setStatus(key, STATUS[action], action === "apply" ? { blocking: "Application assistant arrives in Phase 3 — apply via the official page for now" } : {});
@@ -69,7 +74,7 @@ export async function handleUpdate(u: TgUpdate, store = new Store(), ownerChatId
     ]);
     if (action === "apply") {
       const x = row.extracted;
-      await sendMessage(
+      await reply(
         [
           `<b>Next steps: ${esc(row.title)}</b>`,
           x.howToApply.value ? `How to apply (from the page): <i>${esc(x.howToApply.value)}</i>` : "How to apply isn't stated clearly — check the page.",
@@ -88,30 +93,30 @@ export async function handleUpdate(u: TgUpdate, store = new Store(), ownerChatId
   switch (cmd) {
     case "/start":
     case "/help":
-      return sendMessage(`👋 Opportunity Agent is running.\n\n${HELP}`);
+      return reply(`👋 Opportunity Agent is running.\n\n${HELP}`);
     case "/pause":
       await store.setPaused(true);
-      return sendMessage("⏸ Paused. No searches, digests or alerts until /resume.");
+      return reply("⏸ Paused. No searches, digests or alerts until /resume.");
     case "/resume":
       await store.setPaused(false);
-      return sendMessage("▶️ Resumed.");
+      return reply("▶️ Resumed.");
     case "/status": {
       const paused = await store.isPaused();
       const spent = await store.aiSpentThisMonth();
       const broken = await store.brokenSources(3);
-      return sendMessage(
+      return reply(
         `${paused ? "⏸ Paused" : "▶️ Running"}\n${aiEnabled() ? `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}` : "Mode: free (no AI, $0)"}\nBroken sources: ${broken.length ? broken.join(", ") : "none"}`,
       );
     }
     case "/saved":
-      return sendMessage(`<b>Saved & in progress</b>\n${listRows(await store.byStatus(["saved", "preparing", "waiting_on_me"]), "Nothing saved yet.")}`);
+      return reply(`<b>Saved & in progress</b>\n${listRows(await store.byStatus(["saved", "preparing", "waiting_on_me"]), "Nothing saved yet.")}`);
     case "/deadlines":
-      return sendMessage(`<b>Deadlines in the next 7 days</b>\n${listRows(await store.deadlinesWithin(7), "No saved deadlines this week.")}`);
+      return reply(`<b>Deadlines in the next 7 days</b>\n${listRows(await store.deadlinesWithin(7), "No saved deadlines this week.")}`);
     case "/tracker": {
       const rows = await store.byStatus(["saved", "preparing", "waiting_on_me", "submitted", "interview", "result"], 50);
-      return sendMessage(`<b>Tracker</b>\n${listRows(rows, "Nothing tracked yet.")}`);
+      return reply(`<b>Tracker</b>\n${listRows(rows, "Nothing tracked yet.")}`);
     }
     default:
-      return sendMessage(`I didn't understand that.\n\n${HELP}`);
+      return reply(`I didn't understand that.\n\n${HELP}`);
   }
 }
