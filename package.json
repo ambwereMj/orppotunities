@@ -14,6 +14,7 @@
     "dry-run": "DRY_RUN=1 tsx src/jobs/daily.ts",
     "vault": "tsx src/jobs/vault-cli.ts",
     "setup": "tsx src/jobs/setup-telegram.ts",
+    "reset-cache": "tsx src/jobs/reset-cache.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

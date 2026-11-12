@@ -10,7 +10,7 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [daily, digest, alerts, setup]
+        options: [daily, digest, alerts, setup, reset-cache]
         default: daily
       webhook_base_url:
         description: "Only for setup: the Vercel address, e.g. https://opportunity-agent-mocha.vercel.app"
