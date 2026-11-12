@@ -2,6 +2,7 @@ import { Store, type OppRow } from "../db/store.js";
 import { aiEnabled, settings } from "../lib/config.js";
 import { answerCallback, editButtons, sendMessage } from "./api.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
+import { LINK_DAYS, trackerLink } from "../web/tracker.js";
 
 /** Feedback -> ranking weights (bounded ±10 per key in the store). */
 const FEEDBACK_DELTA: Record<string, number> = { apply: 2, save: 1, skip: -0.5, ni: -2 };
@@ -17,6 +18,7 @@ const HELP = `<b>Commands</b>
 /saved – saved & in-progress items
 /deadlines – deadlines in the next 7 days
 /tracker – everything by status
+/web – private link to the tracker page (edit status, notes, blockers)
 /status – agent status & AI spend
 /pause – stop all automation (kill switch)
 /resume – start again
@@ -112,6 +114,10 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
       return reply(`<b>Saved & in progress</b>\n${listRows(await store.byStatus(["saved", "preparing", "waiting_on_me"]), "Nothing saved yet.")}`);
     case "/deadlines":
       return reply(`<b>Deadlines in the next 7 days</b>\n${listRows(await store.deadlinesWithin(7), "No saved deadlines this week.")}`);
+    case "/web": {
+      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "opportunity-agent-mocha.vercel.app";
+      return reply(`🗂 <a href="${trackerLink(`https://${host}`)}">Open your tracker</a>\nPrivate link — don't forward it. It expires in ${LINK_DAYS} days.`);
+    }
     case "/tracker": {
       const rows = await store.byStatus(["saved", "preparing", "waiting_on_me", "submitted", "interview", "result"], 50);
       return reply(`<b>Tracker</b>\n${listRows(rows, "Nothing tracked yet.")}`);

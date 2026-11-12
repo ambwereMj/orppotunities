@@ -12,6 +12,7 @@ const EducationSchema = z.object({
   end: z.union([z.string(), z.number()]).optional().nullable(),
   current: z.boolean().optional(),
   year_of_study: z.number().optional().nullable(),
+  expected_graduation: z.union([z.string(), z.number()]).optional().nullable(),
 });
 
 export const ProfileSchema = z.object({
@@ -31,6 +32,12 @@ export const ProfileSchema = z.object({
   payout_methods: z.array(z.string()),
   academic_grade_for_scholarships: z.string().nullable().optional(),
   gpa: z.string().nullable().optional(),
+  technical_skills: z.record(z.string(), z.array(z.string())).optional(),
+  contact: z
+    .object({ phone: z.string().optional(), email: z.string().optional(), github: z.string().optional(), location: z.string().optional() })
+    .optional(),
+  career_objective: z.string().optional(),
+  referees: z.array(z.object({ name: z.string(), occupation: z.string().optional(), email: z.string().optional(), phone: z.string().optional() })).default([]),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 

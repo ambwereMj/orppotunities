@@ -69,10 +69,23 @@ async function weeklySummary(store: Store) {
       `Found this week: ${s.found_this_week ?? 0}`,
       `Saved: ${s.saved ?? 0} · Preparing: ${s.preparing ?? 0} · Waiting on you: ${s.waiting_on_me ?? 0}`,
       `Submitted: ${s.submitted ?? 0} · Interview: ${s.interview ?? 0} · Results: ${s.result ?? 0}`,
+      ...(await refereeNudge()),
       aiEnabled() ? `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}` : "Mode: free (no AI, $0)",
     ].join("\n"),
   );
   await store.setSetting("last_weekly", week);
+}
+
+/** Reminder until an academic referee is on the profile (scholarships usually need one). */
+async function refereeNudge(): Promise<string[]> {
+  try {
+    const { loadProfile } = await import("../lib/config.js");
+    const p = loadProfile();
+    const academic = p.referees.some((r) => /lecturer|professor|instructor|teacher|dr\.?\b|tutor|dean|head of department/i.test(`${r.name} ${r.occupation ?? ""}`));
+    return academic ? [] : ["", "🎓 Reminder: add an academic referee (a JKUAT lecturer or Moringa instructor). Most scholarships need one."];
+  } catch {
+    return [];
+  }
 }
 
 export async function runHourly() {

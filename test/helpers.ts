@@ -52,6 +52,7 @@ export const profile: Profile = {
   payout_methods: ["mpesa", "paypal", "bank_card_kcb"],
   academic_grade_for_scholarships: "KCSE B+",
   gpa: null,
+  referees: [],
 };
 
 export const NOW = new Date("2026-11-12T06:00:00+03:00");
