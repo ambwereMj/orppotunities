@@ -13,9 +13,9 @@ on:
         options: [daily, digest, alerts, setup]
         default: daily
       webhook_base_url:
-        description: "Only for setup: the Vercel address, e.g. https://opportunity-agent.vercel.app"
+        description: "Only for setup: the Vercel address, e.g. https://opportunity-agent-mocha.vercel.app"
         required: false
-        default: "https://opportunity-agent.vercel.app"
+        default: "https://opportunity-agent-mocha.vercel.app"
 
 concurrency:
   group: agent-${{ github.event.schedule || inputs.job }}
