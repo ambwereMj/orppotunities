@@ -1,0 +1,46 @@
+name: Opportunity Agent
+# All times UTC. Nairobi = UTC+3. GitHub may start scheduled runs a few minutes late.
+on:
+  schedule:
+    - cron: "0 3 * * *"    # 06:00 EAT  daily finder
+    - cron: "0 4 * * *"    # 07:00 EAT  daily digest
+    - cron: "17 * * * *"   # hourly     alerts, reminders, source health, Sunday summary
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        type: choice
+        options: [daily, digest, alerts]
+        default: daily
+
+concurrency:
+  group: agent-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      PROFILE_YAML_B64: ${{ secrets.PROFILE_YAML_B64 }}
+      AI_MONTHLY_CAP_USD: ${{ vars.AI_MONTHLY_CAP_USD || '10' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Pick job
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 3 * * *") echo "job=daily" >> "$GITHUB_OUTPUT" ;;
+            "0 4 * * *") echo "job=digest" >> "$GITHUB_OUTPUT" ;;
+            "17 * * * *") echo "job=alerts" >> "$GITHUB_OUTPUT" ;;
+            *) echo "job=${{ inputs.job }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - run: npm run ${{ steps.pick.outputs.job }}

@@ -1,0 +1,30 @@
+# Copy to profile.yaml (git-ignored) and fill in. Leave unknown values as null —
+# the agent never guesses; anything null that an application needs triggers a Telegram question.
+name: Your Legal Name
+nationality: Kenyan
+country_of_residence: Kenya
+timezone: Africa/Nairobi
+date_of_birth: null          # YYYY-MM-DD, needed for age limits
+passport: null               # true / false
+languages: [English]
+education:
+  - level: secondary
+    qualification: KCSE
+    institution: Example Secondary School
+    grade: B+
+    start: 2019
+    end: 2023
+  - level: undergraduate
+    qualification: BSc Electronics & Computer Engineering
+    institution: Example University
+    start: 2024-09
+    end: null                # expected graduation
+    current: true
+    year_of_study: null
+fields: [electrical engineering, electronic engineering, computer engineering, software engineering, computer science]
+skills: [frontend development, backend development, microcontroller programming]
+projects: []
+weekly_hours_available: null
+payout_methods: [mpesa, paypal, bank_card_kcb]
+academic_grade_for_scholarships: "KCSE B+"
+gpa: null                    # never invented; if a form requires it the application pauses

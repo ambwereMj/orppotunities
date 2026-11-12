@@ -1,0 +1,238 @@
+# Pluggable source list. Set enabled: false to switch one off, or add new entries.
+# kind:
+#   rss       – any RSS/Atom feed (aggregators: leads only, always resolved to the official page)
+#   remoteok  – RemoteOK public JSON API
+#   remotive  – Remotive public JSON API
+#   himalayas – Himalayas public JSON API
+#   page      – an official page we watch; links whose text matches `match` become leads
+# type: scholarship | internship | remote_work | program | skills
+# aggregator: true means the listing is NOT the official source and must be resolved.
+# Every request: robots.txt respected, >= 5s between requests to the same host, 3 retries.
+
+sources:
+  # ── Scholarship / opportunity aggregators ─────────────────────────────
+  - id: opportunity_desk
+    kind: rss
+    url: https://opportunitydesk.org/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+  - id: opportunities_for_africans
+    kind: rss
+    url: https://www.opportunitiesforafricans.com/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+  - id: scholarship_positions
+    kind: rss
+    url: https://scholarship-positions.com/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+  - id: scholars4dev
+    kind: rss
+    url: https://www.scholars4dev.com/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+  - id: afterschoolafrica
+    kind: rss
+    url: https://www.afterschoolafrica.com/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+  - id: opportunities_circle
+    kind: rss
+    url: https://www.opportunitiescircle.com/feed/
+    type: scholarship
+    aggregator: true
+    enabled: true
+
+  # ── Official scholarship bodies (watched pages) ───────────────────────
+  - id: daad
+    kind: page
+    url: https://www2.daad.de/deutschland/stipendium/datenbank/en/21148-scholarship-database/?status=&origin=96&subjectGrps=E&daad=&intention=&q=&page=1&back=1
+    type: scholarship
+    match: [scholarship, engineering, electrical, computer, RISE, study]
+    enabled: true
+  - id: chevening
+    kind: page
+    url: https://www.chevening.org/scholarships/
+    type: scholarship
+    match: [scholarship, apply, application]
+    enabled: true
+  - id: commonwealth_uk
+    kind: page
+    url: https://cscuk.fcdo.gov.uk/scholarships/
+    type: scholarship
+    match: [scholarship, master, phd, kenya]
+    enabled: true
+  - id: erasmus_mundus
+    kind: page
+    url: https://www.eacea.ec.europa.eu/scholarships/erasmus-mundus-catalogue_en
+    type: scholarship
+    match: [engineering, electr, computer, robot, embedded, data]
+    enabled: true
+  - id: mext_kenya
+    kind: page
+    url: https://www.ke.emb-japan.go.jp/itpr_en/education.html
+    type: scholarship
+    match: [MEXT, scholarship, monbukagakusho]
+    enabled: true
+  - id: mastercard_foundation
+    kind: page
+    url: https://mastercardfdn.org/en/what-we-do/our-programs/mastercard-foundation-scholars-program/
+    type: scholarship
+    match: [scholar, apply, university]
+    enabled: true
+  - id: gks_korea
+    kind: page
+    url: https://www.studyinkorea.go.kr/en/sub/gks/allnew_invite.do
+    type: scholarship
+    match: [GKS, scholarship, undergraduate, graduate]
+    enabled: true
+  - id: csc_china
+    kind: page
+    url: https://www.campuschina.org/scholarships/index.html
+    type: scholarship
+    match: [scholarship, CSC]
+    enabled: true
+  - id: turkiye_burslari
+    kind: page
+    url: https://www.turkiyeburslari.gov.tr/
+    type: scholarship
+    match: [scholarship, application, undergraduate]
+    enabled: true
+  - id: stipendium_hungaricum
+    kind: page
+    url: https://stipendiumhungaricum.hu/
+    type: scholarship
+    match: [application, call, scholarship]
+    enabled: true
+  - id: swedish_institute
+    kind: page
+    url: https://si.se/en/apply/scholarships/
+    type: scholarship
+    match: [scholarship, global professionals]
+    enabled: true
+  - id: mitacs_globalink
+    kind: page
+    url: https://www.mitacs.ca/our-programs/globalink-research-internship-students/
+    type: internship
+    match: [globalink, research internship, apply]
+    enabled: true
+  - id: daad_rise
+    kind: page
+    url: https://www.daad.de/rise/en/
+    type: internship
+    match: [RISE, internship, apply]
+    enabled: true
+  - id: oist_internship
+    kind: page
+    url: https://www.oist.jp/research-internship-program
+    type: internship
+    match: [internship, apply]
+    enabled: true
+  - id: kaust_vsrp
+    kind: page
+    url: https://vsrp.kaust.edu.sa/
+    type: internship
+    match: [apply, internship, VSRP]
+    enabled: true
+  - id: huawei_seeds
+    kind: page
+    url: https://www.huawei.com/en/sustainability/the-latest/stories/seeds-for-the-future
+    type: program
+    match: [seeds for the future, kenya, apply]
+    enabled: true
+
+  # ── Remote job boards (official APIs/feeds) ───────────────────────────
+  - id: remoteok
+    kind: remoteok
+    url: https://remoteok.com/api
+    type: remote_work
+    enabled: true
+  - id: remotive
+    kind: remotive
+    url: https://remotive.com/api/remote-jobs?category=software-dev
+    type: remote_work
+    enabled: true
+  - id: remotive_qa
+    kind: remotive
+    url: https://remotive.com/api/remote-jobs?category=qa
+    type: remote_work
+    enabled: true
+  - id: wwr_programming
+    kind: rss
+    url: https://weworkremotely.com/categories/remote-programming-jobs.rss
+    type: remote_work
+    enabled: true
+  - id: himalayas
+    kind: himalayas
+    url: https://himalayas.app/jobs/api?limit=100
+    type: remote_work
+    enabled: true
+  # Wellfound: read-only by hand — no automation (terms of service).
+
+  # ── Paid programs & competitions ──────────────────────────────────────
+  - id: gsoc
+    kind: page
+    url: https://summerofcode.withgoogle.com/
+    type: program
+    match: [apply, contributor, timeline]
+    enabled: true
+  - id: outreachy
+    kind: page
+    url: https://www.outreachy.org/apply/
+    type: program
+    match: [apply, internship, initial application]
+    enabled: true
+  - id: lfx
+    kind: page
+    url: https://mentorship.lfx.linuxfoundation.org/
+    type: program
+    match: [mentorship, apply]
+    enabled: true
+  - id: mlh_fellowship
+    kind: page
+    url: https://fellowship.mlh.io/
+    type: program
+    match: [apply, fellowship]
+    enabled: true
+
+  # ── Kenya employers & programs ────────────────────────────────────────
+  - id: safaricom_careers
+    kind: page
+    url: https://www.safaricom.co.ke/careers
+    type: internship
+    match: [intern, graduate, engineer, software, talent]
+    enabled: true
+  - id: kengen_careers
+    kind: page
+    url: https://www.kengen.co.ke/index.php/careers.html
+    type: internship
+    match: [intern, attachment, graduate, engineer]
+    enabled: true
+  - id: kplc_careers
+    kind: page
+    url: https://www.kplc.co.ke/careers
+    type: internship
+    match: [intern, attachment, graduate, engineer]
+    enabled: true
+  - id: equity_careers
+    kind: page
+    url: https://equitygroupholdings.com/ke/careers
+    type: internship
+    match: [intern, graduate, software, engineer, technology]
+    enabled: true
+  - id: alx_africa
+    kind: page
+    url: https://www.alxafrica.com/
+    type: skills
+    match: [apply, program, scholarship, software]
+    enabled: true
+  - id: myjobmag_kenya
+    kind: rss
+    url: https://www.myjobmag.co.ke/feeds
+    type: internship
+    enabled: true

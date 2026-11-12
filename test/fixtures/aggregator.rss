@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel><title>Opportunities</title>
+<item>
+  <title>DAAD RISE Summer Internships 2027 for Engineering Undergraduates (Fully Funded)</title>
+  <link>https://aggregator.example/daad-rise-2027/?utm_source=rss</link>
+  <description><![CDATA[<p>Research internships in Germany for <b>engineering</b> undergraduates worldwide. Stipend provided.</p>]]></description>
+  <pubDate>Mon, 09 Nov 2026 10:00:00 +0000</pubDate>
+  <category>Internships</category>
+</item>
+<item>
+  <title>Call for Poetry Submissions 2027</title>
+  <link>https://aggregator.example/poetry-2027/</link>
+  <description>Poets from anywhere may submit.</description>
+</item>
+</channel></rss>

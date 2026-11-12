@@ -1,0 +1,34 @@
+{
+  "name": "opportunity-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal agent that finds, verifies, ranks and delivers scholarships, internships and paid work via Telegram.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "daily": "tsx src/jobs/daily.ts",
+    "digest": "tsx src/jobs/digest.ts",
+    "alerts": "tsx src/jobs/hourly.ts",
+    "dry-run": "DRY_RUN=1 tsx src/jobs/daily.ts",
+    "vault": "tsx src/jobs/vault-cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@supabase/supabase-js": "^2.119.0",
+    "cheerio": "^1.2.0",
+    "rss-parser": "^3.13.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@vercel/node": "^30.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

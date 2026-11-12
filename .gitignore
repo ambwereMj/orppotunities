@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.vercel/
+
+# Personal data — NEVER commit. Lives in the encrypted vault / CI secrets.
+profile.yaml
+vault/
+*.pdf
+*.docx
+*CV*
+*cv*.pdf
+*.key
