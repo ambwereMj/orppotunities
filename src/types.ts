@@ -7,6 +7,8 @@ export interface SourceConfig {
   type: OppType;
   aggregator?: boolean;
   match?: string[];
+  /** Watched pages: also follow links to other sites (default: same site only). */
+  external?: boolean;
   enabled: boolean;
 }
 

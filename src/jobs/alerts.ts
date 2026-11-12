@@ -17,7 +17,7 @@ export async function sendInstantAlerts(store: Store) {
     .is("alerted_at", null)
     .is("digested_at", null)
     .eq("status", "found")
-    .in("verdict", ["eligible", "check"])
+    .eq("verdict", "eligible") // "check" items wait for the digest instead of interrupting you
     .or(`score.gte.${settings.instantAlertScore},and(deadline.gte.${today},deadline.lte.${new Date(Date.now() + settings.urgentDays * 86_400_000).toISOString().slice(0, 10)})`);
   if (error) throw new Error(JSON.stringify(error));
   for (const row of data ?? []) {

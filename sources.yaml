@@ -72,6 +72,7 @@ sources:
     url: https://www.eacea.ec.europa.eu/scholarships/erasmus-mundus-catalogue_en
     type: scholarship
     match: [engineering, electr, computer, robot, embedded, data]
+    external: true   # the catalogue links to each programme's own site
     enabled: true
   - id: mext_kenya
     kind: page

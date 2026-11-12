@@ -54,6 +54,7 @@ const SourceSchema = z.object({
   type: z.enum(["scholarship", "internship", "remote_work", "program", "skills"]),
   aggregator: z.boolean().optional(),
   match: z.array(z.string()).optional(),
+  external: z.boolean().optional(),
   enabled: z.boolean(),
 });
 

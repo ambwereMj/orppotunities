@@ -152,6 +152,8 @@ export function parsePage(html: string, pageUrl: string, src: SourceConfig): Lea
     } catch {
       return;
     }
+    const site = (u: string) => new URL(u).hostname.replace(/^www\d?\./, "").split(".").slice(-2).join(".");
+    if (!src.external && site(abs) !== site(pageUrl)) return;
     const hay = `${text} ${href}`.toLowerCase();
     if (kws.length && !kws.some((k) => hay.includes(k))) return;
     if (!OPP_WORD.test(text)) return;

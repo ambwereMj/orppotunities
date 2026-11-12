@@ -9,6 +9,7 @@ import {
   extractPaymentMethods,
   extractWithRules,
   findDates,
+  isClosed,
   sentences,
 } from "../src/pipeline/extract-rules.js";
 import { checkEligibility } from "../src/pipeline/eligibility.js";
@@ -36,7 +37,17 @@ describe("deadline", () => {
   it("takes the date from a deadline sentence and quotes it", () => {
     const d = extractDeadline(S("The programme starts on 1 September 2027. The application deadline is 15 January 2027. Good luck."), NOW);
     expect(d.value).toBe("2027-01-15");
-    expect(d.quote).toBe("The application deadline is 15 January 2027.");
+    expect(d.quote).toContain("deadline is 15 January 2027");
+  });
+  it("ignores 'Last updated' dates next to the deadline (live-run bug)", () => {
+    const griffith = S("Griffith Vice Chancellor's International Scholarship Last updated: 12 Nov 2026 | Griffith University Bachelors/Masters Degree Deadline: 28 Nov 2026/10 Apr 2027 Study in: Australia Course starts March/July 2027");
+    expect(extractDeadline(griffith, NOW).value).toBe("2026-11-28");
+    const aus = S("Australia Awards Scholarships Last updated: 12 Nov 2026 | CURRENTLY CLOSED Australian Government Deadline: 30 April (annual, most countries) Study in: Australia Course starts 2028");
+    expect(extractDeadline(aus, NOW).value).toBeNull(); // no year given -> unknown, never guessed
+  });
+  it("detects closed calls", () => {
+    expect(isClosed("Australia Awards Scholarships | CURRENTLY CLOSED Australian Government")).toBe("CURRENTLY CLOSED");
+    expect(isClosed("Applications are open until 1 March.")).toBeNull();
   });
   it("never guesses: no deadline sentence -> unknown", () => {
     expect(extractDeadline(S("The programme starts on 1 September 2027."), NOW).value).toBeNull();

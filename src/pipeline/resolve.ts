@@ -5,7 +5,7 @@ const NOT_OFFICIAL =
   /(facebook|twitter|x\.com|instagram|linkedin|youtube|tiktok|whatsapp|t\.me|telegram|pinterest|reddit|wa\.me|google\.com\/(search|url)|bit\.ly|tinyurl|feedburner|wordpress\.com|gravatar|amazon|doubleclick|addtoany|sharethis|disqus|opportunitydesk|opportunitiesforafricans|scholarship-positions|scholars4dev|afterschoolafrica|opportunitiescircle|scholarshipregion|myjobmag|remoteok|remotive|weworkremotely|himalayas)/i;
 
 const OFFICIAL_TEXT =
-  /official (website|link|page|site)|apply (now|here|online)|application (form|portal|link|page)|visit (the )?(official|website|site|programme|program)|for more (information|details)|click here to apply|learn more|more information|register (here|now)|apply for this job|apply/i;
+  /official\b.{0,30}\b(website|link|page|site)|apply (now|here|online)|apply (to|for) (this|the)|how to apply|application (deadline )?link|application (form|portal|link|page)|visit (the )?(official|website|site|programme|program)|for more (information|details)|click here to apply|learn more|more information|register (here|now)|apply for this job|apply/i;
 
 export function htmlToText(html: string, maxChars = 24000): string {
   const $ = cheerio.load(html);

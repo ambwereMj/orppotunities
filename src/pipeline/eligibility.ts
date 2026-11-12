@@ -65,6 +65,11 @@ export function checkEligibility(x: Extracted, lead: Lead, p: Profile, now = new
   if (OTHER_REGION.test(regionText) && !/africa|kenya|worldwide|all countries/i.test(regionText)) {
     worst("ineligible", `programme for another region (${regionText.match(OTHER_REGION)![0]})`);
   }
+  const ONE_NATIONALITY =
+    /\b(nigerian?|ghanaian?|indian?|pakistani?|bangladeshi?|indonesian?|filipino|philippines|vietnamese|egyptian?|ethiopian?|ugandan?|tanzanian?|rwandan?|south african?|zimbabwean?|zambian?|malawian?|cameroonian?|senegalese|moroccan?|tunisian?|algerian?|american|canadian|british|australian|new zealand)\b/i;
+  if (ONE_NATIONALITY.test(nat) && !/kenya|africa|international|all countries|worldwide|any country|other than|outside/i.test(nat)) {
+    worst("ineligible", `for ${nat.match(ONE_NATIONALITY)![0]} applicants only`);
+  }
   if (OTHER_NATIONALS.test(regionText)) worst("ineligible", `for other nationals: ${regionText.match(OTHER_NATIONALS)![0]}`);
   if ((lead.type === "remote_work" || lead.type === "internship") && geoLockedLocation(lead.location)) {
     worst("ineligible", `location restricted: ${lead.location}`);

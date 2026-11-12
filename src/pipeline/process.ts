@@ -5,7 +5,7 @@ import { log } from "../lib/log.js";
 import type { Lead, Opportunity } from "../types.js";
 import { checkEligibility } from "./eligibility.js";
 import { extract } from "./extract.js";
-import { extractWithRules } from "./extract-rules.js";
+import { extractWithRules, isClosed } from "./extract-rules.js";
 import { oppKey } from "./dedupe.js";
 import { payoutRoute } from "./payout.js";
 import { rank, type Weights } from "./rank.js";
@@ -52,6 +52,11 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     if (!x) return { kind: "not_opportunity", reason: "not a specific opportunity" };
 
     const eligibility = checkEligibility(x, lead, profile);
+    const closed = isClosed(pageText.slice(0, 3000));
+    if (closed) {
+      eligibility.verdict = "ineligible";
+      eligibility.reasons.push(`page says "${closed}"`);
+    }
     if (!resolved) {
       eligibility.reasons.push("couldn't find the official page — link is the listing site");
       if (eligibility.verdict === "eligible") eligibility.verdict = "check";

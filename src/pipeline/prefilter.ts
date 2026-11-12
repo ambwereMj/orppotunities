@@ -59,7 +59,9 @@ export function prefilter(lead: Lead): PrefilterResult {
   const text = `${lead.title} ${lead.summary ?? ""} ${(lead.tags ?? []).join(" ")}`;
   // Watched official pages are already targeted by the page parser.
   if (lead.watched) return { keep: true };
-  if (!RELEVANT[lead.type].test(text)) return { keep: false, reason: "not relevant to type" };
+  // Job boards: judge relevance by the job title only (descriptions mention "web", "test"… everywhere).
+  const relevanceText = lead.type === "remote_work" ? lead.title : text;
+  if (!RELEVANT[lead.type].test(relevanceText)) return { keep: false, reason: "not relevant to type" };
   if ((lead.type === "scholarship" || lead.type === "program") && OTHER_FIELD.test(lead.title) && !TECH_HINT.test(lead.title)) {
     return { keep: false, reason: "another field" };
   }

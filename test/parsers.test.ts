@@ -35,10 +35,15 @@ describe("parsers", () => {
     const leads = parsePage(fx("page.html"), "https://employer.example/careers", src({ kind: "page", type: "internship", match: ["graduate", "intern", "attachment"] }));
     const urls = leads.map((l) => l.url);
     expect(urls).toContain("https://employer.example/careers/graduate-engineer-trainee-2027");
-    expect(urls).toContain("https://other.example/internship-attachment");
+    expect(urls).not.toContain("https://other.example/internship-attachment"); // other site: off by default
     expect(urls.some((u) => u.includes("finance-officer"))).toBe(false);
     expect(urls.some((u) => u.startsWith("mailto"))).toBe(false);
     expect(leads.every((l) => l.watched)).toBe(true);
+  });
+
+  it("follows links to other sites only when the source allows it", () => {
+    const leads = parsePage(fx("page.html"), "https://employer.example/careers", src({ kind: "page", type: "internship", match: ["attachment"], external: true }));
+    expect(leads.map((l) => l.url)).toContain("https://other.example/internship-attachment");
   });
 });
 

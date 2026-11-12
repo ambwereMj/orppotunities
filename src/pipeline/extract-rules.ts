@@ -43,18 +43,40 @@ const none = <T>(value: T): Evidenced<T> => ({ value, quote: null });
 
 const DEADLINE_CUE = /deadline|closing date|closes? on|close on|apply by|applications? (are )?(due|close)|last (date|day)|submit[^.]{0,40}\bby\b|no later than|until\b/i;
 
+/** Date mentions that are not deadlines (page metadata). */
+const NOT_DEADLINE_BEFORE = /(updated|posted|published|written|modified|by [a-z]+)\W{0,3}$/i;
+/** Words that introduce a deadline; the deadline is the first full date within 80 chars AFTER the cue. */
+const DEADLINE_AT = /deadline|closing date|closes? on|close on|apply by|applications? (are )?(due|close)|last (date|day)|no later than|submit[^.]{0,40}\bby\b/gi;
+
 export function extractDeadline(ss: string[], now = new Date()): Evidenced<string | null> {
   const today = now.toISOString().slice(0, 10);
-  for (const s of ss.filter((x) => DEADLINE_CUE.test(x))) {
-    const dates = findDates(s).filter((d) => d >= today).sort();
-    if (dates.length) return { value: dates[0], quote: s };
+  const found: { date: string; quote: string }[] = [];
+  for (const s of ss) {
+    for (const m of s.matchAll(DEADLINE_AT)) {
+      const start = m.index! + m[0].length;
+      const windowText = s.slice(start, start + 80);
+      // Stop at the next label (e.g. "Study in:", "Course starts") so other dates aren't picked up.
+      const cut = windowText.split(/\b(study in|course starts?|starts?|last updated|updated|posted|published)\b/i)[0];
+      const dates = findDates(cut);
+      if (!dates.length) continue;
+      const before = s.slice(Math.max(0, m.index! - 20), m.index!);
+      if (NOT_DEADLINE_BEFORE.test(before)) continue;
+      const q = s.slice(Math.max(0, m.index! - 10), Math.min(s.length, start + cut.length)).trim();
+      for (const d of dates) found.push({ date: d, quote: q });
+    }
   }
+  const upcoming = found.filter((f) => f.date >= today).sort((x, y) => x.date.localeCompare(y.date));
+  if (upcoming.length) return { value: upcoming[0].date, quote: upcoming[0].quote };
   // A past deadline is still useful: it marks the item expired.
-  for (const s of ss.filter((x) => DEADLINE_CUE.test(x))) {
-    const dates = findDates(s).sort();
-    if (dates.length) return { value: dates[dates.length - 1], quote: s };
-  }
+  const past = found.sort((x, y) => y.date.localeCompare(x.date));
+  if (past.length) return { value: past[0].date, quote: past[0].quote };
   return none(null);
+}
+
+/** "Currently closed" notices. */
+export function isClosed(text: string): string | null {
+  const m = text.match(/\b(currently closed|applications? (are|is) (now )?closed|closed for (applications|this (year|round|cycle))|no longer accepting applications|this (call|opportunity) (has|is) (closed|expired))\b/i);
+  return m ? m[0] : null;
 }
 
 const NAT_CUE = /(open to|eligible|eligibility|applicants? (from|must be)|citizens? of|nationals? of|residents? of|candidates from|who can apply|nationalit)/i;
@@ -181,7 +203,7 @@ export function extractRemote(text: string, lead: Lead): boolean | null {
 
 /** Titles of general/index pages that are not one specific opportunity. */
 const GENERIC_TITLE =
-  /^(why |what is|about|how to|faq|frequently asked|find |explore|search|archive|news|blog|home|resources?|guidance|quality standards|criteria|participating countries|scholarship holders|our programs?|programmes?$|scholarships?$|internships?$|opportunities$)/i;
+  /^(why |what is|about|how to|faq|frequently asked|find |explore|search|archive|news|blog|home|resources?|guidance|quality standards|criteria|participating countries|scholarship holders|our programs?|programmes?$|scholarships?$|internships?$|opportunities$|application timeline|timeline|eligibility|how i |make sure|check if|complete your|follow this link|follow the link|click here|learn more|apply now$|application process|admission process)/i;
 
 /** Heuristic: does the page describe one specific opportunity? Needs an apply cue plus 2 more. */
 export function looksLikeOpportunity(text: string, title = ""): boolean {

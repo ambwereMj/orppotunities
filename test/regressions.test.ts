@@ -77,6 +77,20 @@ describe("eligibility from real cases", () => {
   it("Africa-wide programmes are still fine", () => {
     expect(checkEligibility(extracted({ title: "Mastercard Foundation Scholars Program", eligibleNationalities: ev("African countries", "q") }), lead(), profile, NOW).verdict).toBe("eligible");
   });
+  it("single-nationality schemes (NNPC: 'Be a Nigerian student') are excluded", () => {
+    const r = checkEligibility(extracted({ eligibleNationalities: ev("Eligibility requirements Be a Nigerian student registered for full-time undergraduate study", "q") }), lead(), profile, NOW);
+    expect(r.verdict).toBe("ineligible");
+  });
+  it("'citizens of countries other than Australia' is open to Kenyans", () => {
+    const r = checkEligibility(extracted({ eligibleNationalities: ev("Citizens of countries other than Australia or New Zealand", "q") }), lead(), profile, NOW);
+    expect(r.verdict).not.toBe("ineligible");
+  });
+  it("non-tech remote jobs are dropped by title (Accountant, Patient Care…)", () => {
+    for (const title of ["Accountant", "Patient Care Specialist I", "Account Executive Enterprise", "Telehealth Endocrinologist"]) {
+      expect(prefilter(lead({ type: "remote_work", title, summary: "We build web tools and test software", location: "Worldwide" })).keep).toBe(false);
+    }
+    expect(prefilter(lead({ type: "remote_work", title: "Junior React Developer", location: "Worldwide" })).keep).toBe(true);
+  });
   it("for-other-nationals titles are excluded", () => {
     expect(checkEligibility(extracted({ title: "Scholarship for Nigerian students 2027" }), lead(), profile, NOW).verdict).toBe("ineligible");
   });
