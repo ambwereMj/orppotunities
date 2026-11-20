@@ -31,7 +31,7 @@ function fmtDate(v: string | number | null | undefined): string {
 
 const heading = (text: string) =>
   new Paragraph({
-    spacing: { before: 220, after: 80 },
+    spacing: { before: 180, after: 60 },
     keepNext: true,
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 2 } },
     children: [new TextRun({ text: text.toUpperCase(), bold: true, size: 22, color: ACCENT, font: FONT })],
@@ -86,6 +86,13 @@ export function summary(p: Profile): string {
   return s;
 }
 
+/** The strongest subjects (A and B+ range) from a grades table, e.g. "Computer Studies A, Mathematics B+". */
+export function strongSubjects(subjects: Record<string, string>): string | null {
+  const rank = (g: string) => ["A", "A-", "B+"].indexOf(g.trim().toUpperCase());
+  const top = Object.entries(subjects).filter(([, g]) => rank(g) >= 0).sort((a, b) => rank(a[1]) - rank(b[1]));
+  return top.length ? `Top subjects: ${top.map(([s, g]) => `${s} ${g}`).join(", ")}` : null;
+}
+
 interface Project {
   name: string;
   repo?: string;
@@ -123,6 +130,7 @@ export function buildCv(p: Profile): Document {
     children.push(line(e.institution, { italic: true }));
     const notes = [
       e.grade ? `Grade: ${e.grade}` : null,
+      e.subjects ? strongSubjects(e.subjects) : null,
       e.current && e.year_of_study ? `Year ${e.year_of_study} of study` : null,
       e.current && e.expected_graduation ? `Expected graduation: ${e.expected_graduation}` : null,
     ].filter(Boolean);
@@ -153,6 +161,7 @@ export function buildCv(p: Profile): Document {
   // Other skills & languages
   const soft = p.skills.filter((s) => !/development|microcontroller|literacy/i.test(s));
   children.push(heading("Additional"));
+  if (p.activities.length) children.push(labelled("Leadership & activities", p.activities.join("; ")));
   children.push(labelled("Spoken languages", p.languages.join(", ")));
   if (soft.length) children.push(labelled("Strengths", soft.map((s) => s[0].toUpperCase() + s.slice(1)).join(", ")));
 
@@ -179,7 +188,7 @@ export function buildCv(p: Profile): Document {
     },
     sections: [
       {
-        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 900, bottom: 900, left: 1000, right: 1000 } } },
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 1000, right: 1000 } } },
         children,
       },
     ],

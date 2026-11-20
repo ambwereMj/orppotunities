@@ -11,6 +11,7 @@ export const DOC_TYPES = {
   cv: "CV",
   kcse: "KCSE certificate",
   kcse_results: "KCSE result slip",
+  leaving_cert: "School leaving certificate",
   transcript: "JKUAT transcript",
   enrolment: "JKUAT enrolment / admission letter",
   moringa: "Moringa certificate",
@@ -41,7 +42,8 @@ export function checklistDocs(types: string[]): string[] {
 export function guessType(text = ""): DocType | null {
   const t = text.toLowerCase();
   if (/kcse/.test(t) && /results?/.test(t)) return "kcse_results";
-  if (/kcse|secondary|leaving cert/.test(t)) return "kcse";
+  if (/leaving cert/.test(t)) return "leaving_cert";
+  if (/kcse|secondary/.test(t)) return "kcse";
   if (/transcript|academic record|semester results/.test(t)) return "transcript";
   if (/admission|enrol?ment|student id|letter of (admission|enrol)/.test(t)) return "enrolment";
   if (/moringa/.test(t)) return "moringa";

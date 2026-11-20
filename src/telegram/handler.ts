@@ -28,6 +28,7 @@ const HELP = `<b>Commands</b>
 /web – private link to the tracker page (edit status, notes, blockers)
 /docs – your stored documents (send me a scan or PDF to add one)
 /page kcse 2 – keep only page 2 of a stored PDF (the full scan is kept too)
+/page kcse 2 leaving_cert – save page 2 as a different document
 /label transcript kcse – change what a stored document is
 /status – agent status & AI spend
 /pause – stop all automation (kill switch)
@@ -320,7 +321,7 @@ async function queueForm(store: Store, key: string, url?: string) {
 /** "/page kcse 2": keep only one page of a stored PDF; the full scan is kept as "<slot>_full". */
 async function keepOnePage(text: string, chatId: string, store: Store) {
   const send = (t: string) => sendMessage(t, undefined, chatId);
-  const [, slotRaw, nRaw] = text.trim().split(/\s+/);
+  const [, slotRaw, nRaw, asRaw] = text.trim().split(/\s+/);
   const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
   const slot = (slotRaw ?? "").toLowerCase();
   const n = Number(nRaw);
@@ -335,6 +336,16 @@ async function keepOnePage(text: string, chatId: string, store: Store) {
   const { page } = await extractPage(data, n);
   const name = d.name.replace(/\.pdf$/i, "") + ` (page ${n}).pdf`;
   const path = await storeDocument(store.db, page, name);
+  const target = (asRaw ?? "").toLowerCase();
+  if (target) {
+    // Save this page as a different document; the original stays as it is.
+    if (!(target in DOC_TYPES)) return send(`Unknown type <code>${esc(target)}</code>. Types: ${Object.keys(DOC_TYPES).map((t) => `<code>${t}</code>`).join(", ")}.`);
+    const key = target === "other" ? `other-${Date.now() % 1e9}` : target;
+    if (docs[key]) await deleteDocument(store.db, docs[key].path);
+    docs[key] = { type: target as DocType, path, name, bytes: page.length, uploaded: new Date().toISOString() };
+    await store.setSetting("documents", docs);
+    return sendDocument(chatId, name, page, `✅ Page ${n} of ${count} saved as your ${esc(DOC_TYPES[target as DocType])}. The original file is unchanged.`);
+  }
   const fullKey = `${slot}_full`;
   if (docs[fullKey] && docs[fullKey].path !== d.path) await deleteDocument(store.db, docs[fullKey].path);
   docs[fullKey] = { ...d, type: "other", name: `${d.name} (full scan)` };

@@ -54,6 +54,7 @@ export const profile: Profile = {
   gpa: null,
   referees: [],
   documents_unavailable: [],
+  activities: [],
 };
 
 export const NOW = new Date("2026-11-12T06:00:00+03:00");

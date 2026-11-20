@@ -8,6 +8,7 @@ const EducationSchema = z.object({
   qualification: z.string(),
   institution: z.string(),
   grade: z.string().optional().nullable(),
+  subjects: z.record(z.string(), z.string()).optional(),
   start: z.union([z.string(), z.number()]).optional().nullable(),
   end: z.union([z.string(), z.number()]).optional().nullable(),
   current: z.boolean().optional(),
@@ -40,6 +41,8 @@ export const ProfileSchema = z.object({
     .object({ phone: z.string().optional(), email: z.string().optional(), github: z.string().optional(), location: z.string().optional() })
     .optional(),
   career_objective: z.string().optional(),
+  /** Leadership, sports, clubs, service — true facts (e.g. from your school leaving certificate). */
+  activities: z.array(z.string()).default([]),
   referees: z.array(z.object({ name: z.string(), occupation: z.string().optional(), email: z.string().optional(), phone: z.string().optional() })).default([]),
 });
 export type Profile = z.infer<typeof ProfileSchema>;

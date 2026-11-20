@@ -50,6 +50,7 @@ const DOC_FOR_UPLOAD: [RegExp, DocType | "pack_cv" | "you"][] = [
   [/\b(cv|resume|r[ée]sum[ée]|curriculum)\b/, "pack_cv"],
   [/kcse.*results?|results? slip|high school results/, "kcse_results"],
   [/transcript|academic record/, "transcript"],
+  [/leaving certificate|school leaving/, "leaving_cert"],
   [/kcse|secondary|high school (certificate|diploma)/, "kcse"],
   [/admission|enrol?ment|proof of (study|registration)/, "enrolment"],
   [/passport/, "passport"],

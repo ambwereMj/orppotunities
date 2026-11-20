@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderPage, trackerLink, verifyLink, applyUpdate } from "../src/web/tracker.js";
-import { summary } from "../src/cv/build-cv.js";
+import { strongSubjects, summary } from "../src/cv/build-cv.js";
 import type { OppRow, Store } from "../src/db/store.js";
 import { extracted, profile } from "./helpers.js";
 
@@ -77,5 +77,14 @@ describe("CV summary uses only profile facts", () => {
       education: [{ level: "undergraduate", qualification: "BSc X", institution: "Uni (U)", current: true, year_of_study: 3, expected_graduation: 2029 }],
     });
     expect(s).toContain("Year 3 BSc X student at Uni (expected graduation 2029)");
+  });
+});
+
+describe("CV: strongest subjects", () => {
+  it("lists A and B+ range subjects, best first", () => {
+    expect(strongSubjects({ English: "B", Kiswahili: "A-", Mathematics: "B+", "Computer Studies": "A", Geography: "B-" })).toBe(
+      "Top subjects: Computer Studies A, Kiswahili A-, Mathematics B+",
+    );
+    expect(strongSubjects({ English: "C" })).toBeNull();
   });
 });

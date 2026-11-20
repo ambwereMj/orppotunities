@@ -99,6 +99,14 @@ describe("/page and /label in Telegram", () => {
     expect(String((JSON.parse(String(sent.at(-1)!.body)) as { text: string }).text)).toContain("has 3 page(s)");
   });
 
+  it("/page kcse 2 leaving_cert saves the page as another document and leaves the original", async () => {
+    await handleUpdate(msg("/page kcse 2 leaving_cert"), store);
+    const docs = settings.get("documents") as Record<string, { path: string; name: string; type: string }>;
+    expect(docs.leaving_cert.type).toBe("leaving_cert");
+    expect(await widthOfOnlyPage(decrypt(stored.get(docs.leaving_cert.path)!, PASS))).toBe(400);
+    expect(docs.kcse.path).toBe("docs/kcse.enc"); // original untouched
+  });
+
   it("/label transcript kcse moves a document to another type", async () => {
     await handleUpdate(msg("/label transcript kcse"), store);
     const docs = settings.get("documents") as Record<string, { type: string; name: string }>;

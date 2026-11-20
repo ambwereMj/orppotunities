@@ -23,6 +23,7 @@ export function letterOutline(prof: Profile, row: OppRow): Document {
     ...projects.map((pr) => `${pr.name}: ${(pr.summary ?? "").trim()}`),
     prof.technical_skills?.languages?.length ? `Languages I use: ${prof.technical_skills.languages.join(", ")}.` : "",
     prof.languages.length ? `Spoken languages: ${prof.languages.join(", ")}.` : "",
+    ...prof.activities.map((a) => `${a}.`),
   ].filter(Boolean);
 
   const children = [
