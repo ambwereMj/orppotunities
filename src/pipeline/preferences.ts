@@ -89,6 +89,14 @@ export function applyPreferences(lead: Lead, x: Extracted, el: EligibilityResult
     if (yrs !== null && yrs >= 3) return { drop: `asks for ${yrs}+ years of experience`, notes, boost };
     if (yrs !== null && yrs > 0) notes.push(`Asks for ${yrs} year(s) of experience — your projects and Moringa training may count; check.`);
     if (/\b(junior|entry[- ]level|graduate|intern|trainee|associate)\b/i.test(title)) boost += 6;
+    // You have about 2 hours a day: part-time / freelance / contract work fits best.
+    if (/\b(part[- ]time|freelance|contract(or)?|project[- ]based|flexible hours|hourly|gig)\b/i.test(all)) {
+      boost += 8;
+      notes.push("Part-time / flexible — fits your ~2 hours a day.");
+    } else if (/\b(full[- ]time|40 ?h(ours)?( per|\/) ?week)\b/i.test(all)) {
+      boost -= 6;
+      notes.push("Full-time role — you have about 2 hours a day; only apply if they accept part-time.");
+    }
     return { drop: null, notes, boost };
   }
 

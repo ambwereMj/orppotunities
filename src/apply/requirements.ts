@@ -86,6 +86,15 @@ export function buildChecklist(pageText: string, p: Profile, opts: { gpaMandator
       case "passport":
         return { id, label, status: "you", note: p.passport ? "You have a passport — upload the scan yourself. Its number is never sent to any AI." : "Passport status unknown.", quote: q };
       case "transcript":
+        if (!has("transcript") && (p as { documents_unavailable?: string[] }).documents_unavailable?.includes("transcript")) {
+          return {
+            id,
+            label,
+            status: "you",
+            note: `You don't have a JKUAT transcript yet. Ask JKUAT's Academic Affairs office (or the student portal) for an official or provisional one${has("kcse_results") ? "; where secondary results are accepted, your KCSE result slip is in your vault" : ""}.`,
+            quote: q,
+          };
+        }
         return {
           id,
           label,

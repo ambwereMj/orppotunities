@@ -95,3 +95,11 @@ describe.skipIf(!hasBrowser)("real browser: reads a form and fills a preview wit
     });
   }, 60_000);
 });
+
+describe("availability answers", () => {
+  it("states hours per day and week", () => {
+    const p = { ...prof, weekly_hours_available: 14, daily_hours_available: 2 };
+    expect(answerField(f("Weekly availability"), p).value).toBe("2 hours a day (about 14 hours/week)");
+    expect(answerField(f("Hours per week", "number"), p).value).toBe("14");
+  });
+});

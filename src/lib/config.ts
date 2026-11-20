@@ -29,6 +29,9 @@ export const ProfileSchema = z.object({
   projects: z.array(z.any()).default([]),
   github: z.string().optional().nullable(),
   weekly_hours_available: z.number().nullable().optional(),
+  daily_hours_available: z.number().nullable().optional(),
+  /** Documents you've said you don't have (e.g. "transcript"), so they aren't asked for again. */
+  documents_unavailable: z.array(z.string()).default([]),
   payout_methods: z.array(z.string()),
   academic_grade_for_scholarships: z.string().nullable().optional(),
   gpa: z.string().nullable().optional(),

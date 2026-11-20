@@ -143,8 +143,12 @@ export function answerField(f: FormField, p: Profile, storedDocs: DocType[] = []
   if (has(t, /programming|technical skills|tech stack|languages you (use|know)/)) return ok([...(ts.languages ?? []), ...(ts.frameworks ?? [])].join(", ") || null);
   if (has(t, /language/)) return ok(p.languages.join(", "));
   if (has(t, /skills?/)) return ok([...(ts.languages ?? []), ...(ts.frameworks ?? [])].join(", ") || p.skills.join(", "));
-  if (has(t, /hours|availability|start date|when can you start/))
-    return p.weekly_hours_available ? ok(String(p.weekly_hours_available)) : you("Availability isn't in your profile yet.");
+  if (has(t, /start date|when can you start/)) return you("Start date — your choice.");
+  if (has(t, /hours|availability|commitment|part[- ]time|full[- ]time/)) {
+    if (!p.weekly_hours_available) return you("Availability isn't in your profile yet.");
+    const daily = p.daily_hours_available ? `${p.daily_hours_available} hours a day (about ${p.weekly_hours_available} hours/week)` : `${p.weekly_hours_available} hours/week`;
+    return ok(f.kind === "number" ? String(p.weekly_hours_available) : daily, "From your profile (you're studying full-time).");
+  }
   if (has(t, /referee|reference|recommender/)) return you(`Referee — you have: ${p.referees.map((r) => r.name).join(", ") || "none on file"}.`);
   if (has(t, /how did you hear|where did you (hear|find)|referral/)) return you("Answer yourself.");
 

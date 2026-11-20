@@ -143,3 +143,11 @@ describe("pack", () => {
     expect(NO_BOTS.test("daad.de")).toBe(false);
   });
 });
+
+describe("documents you've said you don't have", () => {
+  it("transcript: explains how to get one instead of asking again", () => {
+    const item = buildChecklist("Applicants must submit an academic transcript.", { ...prof, documents_unavailable: ["transcript"], documents: ["kcse_results"] } as Profile).find((i) => i.id === "transcript")!;
+    expect(item.note).toContain("don't have a JKUAT transcript yet");
+    expect(item.note).toContain("KCSE result slip");
+  });
+});

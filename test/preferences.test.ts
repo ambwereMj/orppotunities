@@ -111,3 +111,13 @@ describe("round-ups are not single opportunities", () => {
     expect(prefilter(lead({ aggregator: true, title })).keep).toBe(false),
   );
 });
+
+describe("availability: about 2 hours a day (20 Nov)", () => {
+  it("ranks part-time/freelance up and flags full-time", () => {
+    const pt = judge("remote_work", "Frontend Developer", { funding: "paid", page: "This is a part-time, flexible hours contract role." });
+    const ft = judge("remote_work", "Frontend Developer", { funding: "paid", page: "This is a full-time position." });
+    expect(pt.boost).toBeGreaterThan(ft.boost);
+    expect(ft.notes.join(" ")).toContain("Full-time");
+    expect(ft.drop).toBeNull(); // flagged, not hidden
+  });
+});
