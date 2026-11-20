@@ -103,6 +103,18 @@ describe("eligibility from real cases", () => {
     expect(prefilter(lead({ aggregator: true, title: "Artificial Intelligence Fellowship 2027", type: "program" })).keep).toBe(true);
     expect(prefilter(lead({ aggregator: true, title: "Digital Health Hackathon for software developers", type: "program" })).keep).toBe(true);
   });
+  it("live run 5: geo-locked job titles, round-ups, language study, care academy", () => {
+    const drop = [
+      lead({ type: "remote_work", title: "SimpleTiger: Web Developer: WordPress & HubSpot (U.S. Based, Remote)", location: "unspecified" }),
+      lead({ type: "remote_work", title: "OfferUp: Software Development Engineer II (Remote @ Colombia)", location: "unspecified" }),
+      lead({ aggregator: true, title: "20 Scholarships, Grants, Fellowships and Other Opportunities Currently Open" }),
+      lead({ aggregator: true, title: "Malek Sghiri Scholarship 2027 to Study Arabic in Tunisia" }),
+      lead({ aggregator: true, type: "skills", title: "IAS Person-Centred Care Global Advocacy Academy 2027 (Funded)" }),
+    ];
+    for (const l of drop) expect(prefilter(l).keep, l.title).toBe(false);
+    expect(prefilter(lead({ type: "remote_work", title: "P2P Node.js Engineer - Holepunch (100% Remote, Worldwide)", location: "Worldwide" })).keep).toBe(true);
+    expect(prefilter(lead({ type: "program", title: "QNX Global Hackathon (hackathon)", location: "Online" })).keep).toBe(true);
+  });
   it("for-other-nationals titles are excluded", () => {
     expect(checkEligibility(extracted({ title: "Scholarship for Nigerian students 2027" }), lead(), profile, NOW).verdict).toBe("ineligible");
   });

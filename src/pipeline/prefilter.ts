@@ -37,7 +37,15 @@ const OTHER_FIELD_WORDS =
   /\b(law|legal|media|film|music|arts?|poetry|fashion|history|sports?|football|mba|finance|marketing|divinity|dyslexia|writing contest|creative writing|social work|business school)\b/i;
 // Word stems: "journalis" matches journalist/journalism, "nurs" nursing/nurses, "health" healthcare…
 const OTHER_FIELD_STEMS =
-  /\b(journalis|medic|nurs|dental|dentist|pharmac|theolog|teach|educat|agricultur|veterinar|health|psycholog|humanit|literat|touris|hospitality|nutrition|midwif|accountan|accounting|child (development|protection|rights)|early childhood)\w*/i;
+  /\b(journalis|medic|nurs|dental|dentist|pharmac|theolog|teach|educat|agricultur|veterinar|health|psycholog|humanit|literat|touris|hospitality|nutrition|midwif|accountan|accounting|child (development|protection|rights)|early childhood|(person|patient)[- ]cent(red|ered) care|caregiv|palliative)\w*/i;
+/** Job titles that state a country restriction, e.g. "(U.S. Based)", "(Remote @ Colombia)". */
+const TITLE_GEO_LOCK =
+  /\b(u\.?s\.?|usa|uk|canada|eu|europe|latam|india|philippines)[- ]?(based|only|residents?)\b|\(remote\s*[@-]\s*(?!worldwide|anywhere|global|africa|kenya)[a-z ]+\)|\bremote\s*\((?!worldwide|anywhere|global|africa|kenya|emea)[a-z ,]+only\)/i;
+/** Round-up posts listing many opportunities ("20 Scholarships … Currently Open"). */
+const ROUNDUP = /^\s*\d+\+?\s+(scholarships?|opportunities|jobs|internships|fellowships|grants)\b/i;
+/** Language-study scholarships (not engineering). */
+const LANGUAGE_STUDY = /\b(study|learn)\s+(arabic|french|german|chinese|mandarin|japanese|korean|spanish|portuguese|russian|turkish|italian)\b/i;
+
 const OTHER_FIELD = { test: (s: string) => OTHER_FIELD_WORDS.test(s) || OTHER_FIELD_STEMS.test(s) };
 const TECH_HINT = /engineer|electr|computer|software|ict|tech|stem|science|data|ai\b|digital|cyber|robot|embedded|code|coding|developer|innovation/i;
 
@@ -71,7 +79,12 @@ export function prefilter(lead: Lead): PrefilterResult {
   // Job boards: judge relevance by the job title only (descriptions mention "web", "test"… everywhere).
   const relevanceText = lead.type === "remote_work" ? lead.title : text;
   if (!RELEVANT[lead.type].test(relevanceText)) return { keep: false, reason: "not relevant to type" };
-  if ((lead.type === "scholarship" || lead.type === "program") && OTHER_FIELD.test(lead.title) && !TECH_HINT.test(lead.title)) {
+  if (ROUNDUP.test(lead.title)) return { keep: false, reason: "round-up post, not one opportunity" };
+  if (LANGUAGE_STUDY.test(lead.title)) return { keep: false, reason: "language-study programme" };
+  if ((lead.type === "remote_work" || lead.type === "internship") && TITLE_GEO_LOCK.test(lead.title)) {
+    return { keep: false, reason: "title says country-restricted" };
+  }
+  if (lead.type !== "remote_work" && lead.type !== "internship" && OTHER_FIELD.test(lead.title) && !TECH_HINT.test(lead.title)) {
     return { keep: false, reason: "another field" };
   }
   if (lead.type === "remote_work" && NON_TECH_ROLE.test(lead.title)) return { keep: false, reason: "non-technical role" };
