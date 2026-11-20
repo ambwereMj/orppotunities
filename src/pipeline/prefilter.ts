@@ -32,8 +32,13 @@ export function inferType(title: string, fallback: OppType): OppType {
 }
 
 /** Titles that clearly name a field other than engineering/tech. */
-const OTHER_FIELD =
-  /\b(law|legal|medicine|medical|nursing|dental|pharmacy|journalis|media|film|music|arts?|art|poetry|writing contest|creative writing|theolog|divinity|fashion|dyslexia|teacher|teaching|education|agricultur|veterinar|public health|social work|humanities|history|literature|sports?|football|tourism|hospitality|nutrition|midwif|psycholog|law school|mba|business school|accounting|finance|marketing)\b/i;
+// Whole words (short ones that would otherwise match inside tech words, e.g. "art" in "artificial").
+const OTHER_FIELD_WORDS =
+  /\b(law|legal|media|film|music|arts?|poetry|fashion|history|sports?|football|mba|finance|marketing|divinity|dyslexia|writing contest|creative writing|social work|business school)\b/i;
+// Word stems: "journalis" matches journalist/journalism, "nurs" nursing/nurses, "health" healthcare…
+const OTHER_FIELD_STEMS =
+  /\b(journalis|medic|nurs|dental|dentist|pharmac|theolog|teach|educat|agricultur|veterinar|health|psycholog|humanit|literat|touris|hospitality|nutrition|midwif|accountan|accounting|child (development|protection|rights)|early childhood)\w*/i;
+const OTHER_FIELD = { test: (s: string) => OTHER_FIELD_WORDS.test(s) || OTHER_FIELD_STEMS.test(s) };
 const TECH_HINT = /engineer|electr|computer|software|ict|tech|stem|science|data|ai\b|digital|cyber|robot|embedded|code|coding|developer|innovation/i;
 
 /** Non-technical roles that mention tech words ("Web3 Business Development", "Software Sales"). */

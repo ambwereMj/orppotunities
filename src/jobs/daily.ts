@@ -45,6 +45,7 @@ async function main() {
   log.info("candidates", { unique: unique.length, fresh: fresh.length, toVerify: candidates.length });
 
   const stored: Opportunity[] = [];
+  const errorsByHost = new Map<string, number>();
   let budgetHit = false;
   await pool(candidates, 4, async (lead) => {
     if (budgetHit) return;
@@ -58,6 +59,11 @@ async function main() {
         // Errors are not marked seen so they are retried tomorrow.
         if (out.kind !== "error") await store?.markSeen([{ url_hash: hashOf(lead), url: lead.url, outcome: out.kind }]);
         log.debug("lead skipped", { url: lead.url, ...out });
+        if (out.kind === "error") {
+          const host = new URL(lead.url).hostname.replace(/^www\./, "").split(".").slice(-2).join(".");
+          const k = `${host}: ${out.reason.slice(0, 60)}`;
+          errorsByHost.set(k, (errorsByHost.get(k) ?? 0) + 1);
+        }
       }
     } catch (e) {
       if (e instanceof BudgetExceeded) budgetHit = true;
@@ -65,6 +71,7 @@ async function main() {
     }
   });
 
+  if (errorsByHost.size) log.info("page errors (retried tomorrow)", Object.fromEntries(errorsByHost));
   await store?.recordAiCost("daily", budget.spentRun);
   if (budgetHit) {
     await sendMessage(

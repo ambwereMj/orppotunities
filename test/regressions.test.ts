@@ -96,6 +96,13 @@ describe("eligibility from real cases", () => {
     expect(prefilter(lead({ type: "remote_work", title: "Web3 Business Development", location: "Worldwide" })).keep).toBe(false);
     expect(prefilter(lead({ type: "remote_work", title: "Software Engineer", location: "Worldwide" })).keep).toBe(true);
   });
+  it("live run 4: journalist/health fellowships dropped, AI ones kept", () => {
+    for (const title of ["The RSF Berlin Fellowship 2027 for journalists", "Person-Centred Care Global Advocacy Academy for healthcare workers", "Research Prize on Child Development"]) {
+      expect(prefilter(lead({ aggregator: true, title, type: "program" })).keep).toBe(false);
+    }
+    expect(prefilter(lead({ aggregator: true, title: "Artificial Intelligence Fellowship 2027", type: "program" })).keep).toBe(true);
+    expect(prefilter(lead({ aggregator: true, title: "Digital Health Hackathon for software developers", type: "program" })).keep).toBe(true);
+  });
   it("for-other-nationals titles are excluded", () => {
     expect(checkEligibility(extracted({ title: "Scholarship for Nigerian students 2027" }), lead(), profile, NOW).verdict).toBe("ineligible");
   });
