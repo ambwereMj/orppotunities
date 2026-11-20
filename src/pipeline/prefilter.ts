@@ -10,8 +10,8 @@ const RELEVANT: Record<OppType, RegExp> = {
   scholarship:
     /scholarship|fellowship|bursary|grant|funded|exchange|summer (school|program)|stipend|study in|masters?|undergraduate|bachelor|award/i,
   internship: /intern|attachment|graduate (trainee|program)|trainee|apprentice|entry[- ]level|junior|engineer|developer|software|ict|technology|young professionals?/i,
-  remote_work:
-    /developer|engineer|software|frontend|front-end|backend|back-end|full[- ]?stack|web|javascript|typescript|react|node|python|django|flask|qa|test|annotat|ai train|data label|technical writ|tutor|embedded|firmware|iot/i,
+  // You're flexible on jobs as long as the qualifications are within reach (checked in preferences.ts).
+  remote_work: /\w/,
   program: /summer of code|outreachy|mentorship|fellowship|hackathon|bug bounty|grant|research assistant|travel grant|prize|competition|challenge|accelerator|bootcamp/i,
   skills: /voucher|certification|bootcamp|stipend|scholarship|free (course|training)|program|academy/i,
 };
@@ -41,17 +41,21 @@ const OTHER_FIELD_STEMS =
 /** Job titles that state a country restriction, e.g. "(U.S. Based)", "(Remote @ Colombia)". */
 const TITLE_GEO_LOCK =
   /\b(u\.?s\.?|usa|uk|canada|eu|europe|latam|india|philippines)[- ]?(based|only|residents?)\b|\(remote\s*[@-]\s*(?!worldwide|anywhere|global|africa|kenya)[a-z ]+\)|\bremote\s*\((?!worldwide|anywhere|global|africa|kenya|emea)[a-z ,]+only\)/i;
+/** Things you never want (cheap title check; the full rules are in preferences.ts). */
+const NEVER_TITLES: [RegExp, string][] = [
+  [/\b(ai|llm) ?(trainer|tutor|rater)\b|\btrain(ing)? (ai|llms?)\b|\b(ai|llm) coding tasks\b|\bdata (annotat|label)|\bannotat(or|ion)\b/i, "AI-training work (you said no)"],
+  [/\bboot ?camps?\b/i, "bootcamp (you said no)"],
+  [/\b(mooc|online course|free online (course|training)|self-paced)\b/i, "online course (you said no)"],
+  [/\b(mba|business school|global management program)\b/i, "business/management programme"],
+];
+
 /** Round-up posts listing many opportunities ("20 Scholarships … Currently Open"). */
-const ROUNDUP = /^\s*\d+\+?\s+(scholarships?|opportunities|jobs|internships|fellowships|grants)\b/i;
+const ROUNDUP = /^\s*(top\s+)?\d+\+?\s+(\w+\s+){0,3}(scholarships?|opportunities|jobs|internships|fellowships|grants)\b/i;
 /** Language-study scholarships (not engineering). */
 const LANGUAGE_STUDY = /\b(study|learn)\s+(arabic|french|german|chinese|mandarin|japanese|korean|spanish|portuguese|russian|turkish|italian)\b/i;
 
 const OTHER_FIELD = { test: (s: string) => OTHER_FIELD_WORDS.test(s) || OTHER_FIELD_STEMS.test(s) };
 const TECH_HINT = /engineer|electr|computer|software|ict|tech|stem|science|data|ai\b|digital|cyber|robot|embedded|code|coding|developer|innovation/i;
-
-/** Non-technical roles that mention tech words ("Web3 Business Development", "Software Sales"). */
-const NON_TECH_ROLE =
-  /\b(business development|sales|account (executive|manager)|marketing|recruit(er|ing)|customer success|customer support|support specialist|patient|nurse|clinical|accountant|bookkeep|legal|counsel|copywriter|community manager|social media|operations manager|hr\b|human resources|finance|payroll)\b/i;
 
 const SENIOR = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|manager|architect)\b/i;
 
@@ -87,7 +91,7 @@ export function prefilter(lead: Lead): PrefilterResult {
   if (lead.type !== "remote_work" && lead.type !== "internship" && OTHER_FIELD.test(lead.title) && !TECH_HINT.test(lead.title)) {
     return { keep: false, reason: "another field" };
   }
-  if (lead.type === "remote_work" && NON_TECH_ROLE.test(lead.title)) return { keep: false, reason: "non-technical role" };
+  for (const [re, why] of NEVER_TITLES) if (re.test(lead.title)) return { keep: false, reason: why };
   if ((lead.type === "remote_work" || lead.type === "internship") && SENIOR.test(lead.title)) {
     return { keep: false, reason: "senior role" };
   }

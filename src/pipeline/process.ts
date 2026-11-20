@@ -2,7 +2,8 @@ import { aiEnabled, type Profile } from "../lib/config.js";
 import { politeFetch, RobotsDisallowed } from "../lib/http.js";
 import { BudgetExceeded, type Budget } from "../lib/ai.js";
 import { log } from "../lib/log.js";
-import type { Lead, Opportunity } from "../types.js";
+import type { EligibilityResult, Extracted, Lead, Opportunity, Scored } from "../types.js";
+import { applyPreferences } from "./preferences.js";
 import { checkEligibility } from "./eligibility.js";
 import { extract } from "./extract.js";
 import { extractWithRules, isClosed } from "./extract-rules.js";
@@ -74,6 +75,7 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     const paid = lead.type === "remote_work" || x.funding.value === "paid";
     const payout = paid ? payoutRoute(x.paymentMethods.value, `${x.pay.value ?? ""} ${pageText.slice(0, 20000)}`) : null;
     const scored = rank(lead, x, eligibility, payout, weights);
+    withPreferences(lead, x, eligibility, scored, pageText);
 
     return {
       kind: "stored",
@@ -84,6 +86,21 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     if (e instanceof RobotsDisallowed) return { kind: "error", reason: "robots.txt disallows" };
     return { kind: "error", reason: String(e).slice(0, 300) };
   }
+}
+
+/** Apply your stated preferences: exclude what you don't want, add notes, adjust the score. */
+export function withPreferences(lead: Lead, x: Extracted, el: EligibilityResult, scored: Scored, pageText: string) {
+  const pref = applyPreferences(lead, x, el, pageText);
+  if (pref.drop) {
+    el.verdict = "ineligible";
+    el.reasons.push(`your preferences: ${pref.drop}`);
+    return;
+  }
+  for (const n of pref.notes) {
+    el.reasons.push(n);
+    if (/confirm|check/i.test(n) && el.verdict === "eligible") el.verdict = "check";
+  }
+  scored.score = Math.max(0, Math.min(100, scored.score + pref.boost));
 }
 
 /** Item built from the source's feed text when its page blocks bots. Always "check", never "eligible". */
@@ -103,6 +120,7 @@ export function fromFeed(lead: Lead, profile: Profile, weights: Weights): Outcom
   }
   const payout = lead.type === "remote_work" ? payoutRoute(x.paymentMethods.value, text) : null;
   const scored = rank(lead, x, eligibility, payout, weights);
+  withPreferences(lead, x, eligibility, scored, text);
   return { kind: "stored", opp: { key: oppKey(lead.url), type: lead.type, lead, extracted: x, eligibility, scam, payout, scored } };
 }
 

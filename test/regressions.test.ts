@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { inferType, prefilter, roundRobin } from "../src/pipeline/prefilter.js";
 import { parsePage, parseRss } from "../src/sources/parsers.js";
 import { checkEligibility } from "../src/pipeline/eligibility.js";
+import { applyPreferences } from "../src/pipeline/preferences.js";
 import { extractWithRules, looksLikeOpportunity } from "../src/pipeline/extract-rules.js";
 import { NOW, ev, extracted, lead, profile } from "./helpers.js";
 import type { SourceConfig } from "../src/types.js";
@@ -85,15 +86,18 @@ describe("eligibility from real cases", () => {
     const r = checkEligibility(extracted({ eligibleNationalities: ev("Citizens of countries other than Australia or New Zealand", "q") }), lead(), profile, NOW);
     expect(r.verdict).not.toBe("ineligible");
   });
-  it("non-tech remote jobs are dropped by title (Accountant, Patient Care…)", () => {
-    for (const title of ["Accountant", "Patient Care Specialist I", "Account Executive Enterprise", "Telehealth Endocrinologist"]) {
-      expect(prefilter(lead({ type: "remote_work", title, summary: "We build web tools and test software", location: "Worldwide" })).keep).toBe(false);
+  it("jobs needing a qualification you don't have are dropped (your preferences, 20 Nov)", () => {
+    for (const title of ["Accountant", "Patient Care Specialist I", "Telehealth Endocrinologist"]) {
+      const l = lead({ type: "remote_work", title, location: "Worldwide" });
+      expect(applyPreferences(l, extracted({ title, funding: ev<"paid">("paid", "q") }), { verdict: "check", reasons: [] }).drop, title).toBeTruthy();
     }
-    expect(prefilter(lead({ type: "remote_work", title: "Junior React Developer", location: "Worldwide" })).keep).toBe(true);
+    const ok = lead({ type: "remote_work", title: "Junior React Developer", location: "Worldwide" });
+    expect(applyPreferences(ok, extracted({ title: ok.title, funding: ev<"paid">("paid", "q") }), { verdict: "check", reasons: [] }).drop).toBeNull();
   });
   it("live run 3: 'for young Nigerians' and non-tech 'Web3 Business Development'", () => {
     expect(checkEligibility(extracted({ title: "The AltBank Sultan of Sales Graduate Trainee Programme 2026 for young Nigerians" }), lead(), profile, NOW).verdict).toBe("ineligible");
-    expect(prefilter(lead({ type: "remote_work", title: "Web3 Business Development", location: "Worldwide" })).keep).toBe(false);
+    // Since 20 Nov you're flexible on jobs: non-tech roles within reach are kept.
+    expect(prefilter(lead({ type: "remote_work", title: "Web3 Business Development", location: "Worldwide" })).keep).toBe(true);
     expect(prefilter(lead({ type: "remote_work", title: "Software Engineer", location: "Worldwide" })).keep).toBe(true);
   });
   it("live run 4: journalist/health fellowships dropped, AI ones kept", () => {

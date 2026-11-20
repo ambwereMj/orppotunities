@@ -186,7 +186,7 @@ sources:
     enabled: true
   - id: jobicy
     kind: jobicy
-    url: https://jobicy.com/api/v2/remote-jobs?count=50&industry=dev
+    url: https://jobicy.com/api/v2/remote-jobs?count=50   # all job types: you're flexible (20 Nov 2026)
     type: remote_work
     enabled: true
   # Wellfound: read-only by hand — no automation (terms of service).
@@ -260,7 +260,7 @@ sources:
     type: skills
     match: [apply, program, scholarship, software]
     self: true   # this page describes one programme; re-checked weekly
-    enabled: true
+    enabled: false   # bootcamps — you said no (20 Nov 2026)
   - id: myjobmag_kenya
     kind: rss
     url: https://www.myjobmag.co.ke/feeds

@@ -54,7 +54,13 @@ Sites that block bots from their pages but publish feeds (Devpost, We Work Remot
 | `src/telegram/`, `api/telegram.ts` | Bot |
 | `src/jobs/` | `daily`, `digest`, `hourly`, `setup-telegram`, `reset-cache`, `vault-cli` |
 | `supabase/migrations/` | Database schema |
-| `test/` | 178 tests |
+| `test/` | 195 tests |
+
+## Your preferences (20 Nov 2026) — `src/pipeline/preferences.ts`
+- **Scholarships:** fully funded only (tuition + living costs), related to electrical/electronic/computer engineering or open to all fields. Partial awards, business/MBA programmes and other fields are dropped.
+- **Jobs / remote work:** anything within reach. Senior roles, roles needing a licence or another profession (medical, legal, accounting) and postings asking 3+ years of experience are dropped.
+- **Everything else:** must fund travel or build you (fellowships, mentorship, research, leadership, prizes, hackathons, internships).
+- **Never:** AI-training/annotation work, bootcamps, online unpaid courses.
 
 ## Guarantees
 - **No invented facts.** Every fact is quoted from the official page (or the site's own feed, labelled). Missing facts show as unknown, and grades and dates are never guessed.
