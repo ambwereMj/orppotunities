@@ -4,9 +4,9 @@
 
 The database is already created: a Supabase project called **opportunity-agent**, in a separate project from your BnB site, with all tables in place. These remaining steps need your own accounts and secrets, so only you can do them.
 
-## 1. Make the GitHub repo private (2 min)
-GitHub → `ambwereMj/orppotunities` → **Settings → General → Danger Zone → Change visibility → Private**.
-(We made it **public** instead, because the account's free Actions minutes were used up. Public repos have unlimited free minutes; your secrets stay hidden. GitHub pauses schedules in public repos after 60 days without commits and emails you first: re-enable them with one tap in Actions.)
+## 1. Repo visibility
+The repo is **public**. Public repos have unlimited free GitHub Actions minutes, and your profile and keys live only in encrypted secrets, never in the code.
+(It was made public in Nov 2026 after the account's free minutes ran out. GitHub pauses schedules in public repos after 60 days without commits and emails you first: re-enable them with one tap in Actions.)
 
 ## 2. Telegram bot (3 min)
 1. In Telegram, open **@BotFather** → `/newbot` → pick a name. Copy the **token**.
@@ -41,13 +41,11 @@ If you had already pressed Start, you get "You're registered as the owner". Othe
 
 Then run the workflow again with job **daily** for the first search, and **digest** to receive the results.
 
-## 7. Put your CV in the encrypted vault (optional now, needed in Phase 3)
-On a computer with the repo:
-```
-export SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... VAULT_PASSPHRASE='a long passphrase you keep in a password manager'
-npm run vault -- put path/to/your_CV.pdf cv
-```
-Files are encrypted on your machine before upload. If you lose the passphrase, the files can't be recovered.
+## 7. Documents (from your phone)
+Send any scan or PDF to the bot, for example your KCSE certificate, JKUAT transcript, Moringa and ICDL certificates, or passport bio page. It is encrypted before it is stored, and the bot asks what it is. `/docs` lists your documents and sends any of them back. The encryption key (`VAULT_PASSPHRASE`) lives only in Vercel. If it is ever lost, re-upload your scans.
+
+## 8. Profile changes
+Your profile lives in `profile.yaml` (never committed). When it changes, update the `PROFILE_YAML_B64` value in **both** GitHub (Actions secrets) and Vercel (environment variables), or ask Claude to do it.
 
 ## Kill switch
 - `/pause` in Telegram stops all jobs. `/resume` starts them again.

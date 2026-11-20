@@ -94,3 +94,12 @@ export async function askQuestion(chatId: string, text: string): Promise<number 
   })) as { ok: boolean; result?: { message_id?: number } };
   return r.ok ? (r.result?.message_id ?? null) : null;
 }
+
+/** Download a file the owner sent to the bot (Telegram allows bots up to 20 MB). */
+export async function downloadFile(fileId: string): Promise<Buffer> {
+  const r = (await call("getFile", { file_id: fileId })) as { ok: boolean; result?: { file_path?: string } };
+  if (!r.ok || !r.result?.file_path) throw new Error("Telegram getFile failed");
+  const res = await fetch(`https://api.telegram.org/file/bot${env("TELEGRAM_BOT_TOKEN")}/${r.result.file_path}`);
+  if (!res.ok) throw new Error(`download failed: HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}

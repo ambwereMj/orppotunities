@@ -4,6 +4,8 @@ import { answerCallback, askQuestion, editButtons, sendDocument, sendMessage } f
 import { loadProfile } from "../lib/config.js";
 import { preparePack } from "../apply/pack.js";
 import { checklistText } from "../apply/requirements.js";
+import { DOC_TYPES, checklistDocs, deleteDocument, guessType, readDocument, storeDocument, type DocType, type StoredDoc } from "../vault/docs.js";
+import { downloadFile } from "./api.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
 import { LINK_DAYS, trackerLink } from "../web/tracker.js";
 
@@ -22,6 +24,7 @@ const HELP = `<b>Commands</b>
 /deadlines – deadlines in the next 7 days
 /tracker – everything by status
 /web – private link to the tracker page (edit status, notes, blockers)
+/docs – your stored documents (send me a scan or PDF to add one)
 /status – agent status & AI spend
 /pause – stop all automation (kill switch)
 /resume – start again
@@ -35,7 +38,15 @@ function listRows(rows: OppRow[], empty: string) {
 }
 
 export interface TgUpdate {
-  message?: { chat: { id: number; type?: string }; text?: string; message_id?: number; reply_to_message?: { message_id: number } };
+  message?: {
+    chat: { id: number; type?: string };
+    text?: string;
+    caption?: string;
+    message_id?: number;
+    reply_to_message?: { message_id: number };
+    document?: { file_id: string; file_name?: string; file_size?: number; mime_type?: string };
+    photo?: { file_id: string; file_size?: number; width: number }[];
+  };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
 }
 
@@ -58,7 +69,9 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
   const reply = (text: string, buttons?: Parameters<typeof sendMessage>[1]) => sendMessage(text, buttons, String(chatId));
 
   if (u.callback_query) {
-    const [action, key] = (u.callback_query.data ?? "").split(":");
+    const data = u.callback_query.data ?? "";
+    if (data.startsWith("dt:") || data.startsWith("dg:")) return handleDocCallback(data, u.callback_query.id, String(chatId), store);
+    const [action, key] = data.split(":");
     const row = key ? await store.get(key) : null;
     if (!row) return answerCallback(u.callback_query.id, "Item not found");
     if (action === "src") {
@@ -80,6 +93,9 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
     if (action === "apply") await sendApplicationPack(row, String(chatId), store);
     return;
   }
+
+  // Documents (scans, PDFs, photos) go to the encrypted vault.
+  if (u.message?.document || u.message?.photo?.length) return receiveDocument(u.message, String(chatId), store);
 
   // Answers to questions the agent asked ("Reply to this message with…").
   const replyTo = u.message?.reply_to_message?.message_id;
@@ -126,6 +142,8 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
       return reply(`<b>Saved & in progress</b>\n${listRows(await store.byStatus(["saved", "preparing", "waiting_on_me"]), "Nothing saved yet.")}`);
     case "/deadlines":
       return reply(`<b>Deadlines in the next 7 days</b>\n${listRows(await store.deadlinesWithin(7), "No saved deadlines this week.")}`);
+    case "/docs":
+      return listDocuments(String(chatId), store);
     case "/web": {
       const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "opportunity-agent-mocha.vercel.app";
       return reply(`🗂 <a href="${trackerLink(`https://${host}`)}">Open your tracker</a>\nPrivate link — don't forward it. It expires in ${LINK_DAYS} days.`);
@@ -150,6 +168,8 @@ export async function sendApplicationPack(row: OppRow, chatId: string, store: St
   }
   const answers = (await store.getSetting<Record<string, string>>("answers")) ?? {};
   if (answers.GPA && !prof.gpa) prof = { ...prof, gpa: answers.GPA };
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  prof = { ...prof, documents: checklistDocs(Object.values(docs).map((d) => d.type)) } as typeof prof;
 
   await send(`⏳ Preparing your application pack for <b>${esc(row.title)}</b>…`);
   const pack = await preparePack(row, prof);
@@ -196,4 +216,69 @@ export async function sendApplicationPack(row: OppRow, chatId: string, store: St
     return send(`⏸ Paused on: ${esc(missing.map((m) => m.label).join(", "))}. It's in your tracker as "Waiting on me".`);
   }
   await store.setStatus(row.key, "preparing", { blocking: null });
+}
+
+// ── Document vault ─────────────────────────────────────────────────────────────
+
+type Msg = NonNullable<TgUpdate["message"]>;
+
+async function receiveDocument(m: Msg, chatId: string, store: Store) {
+  const send = (t: string, b?: Parameters<typeof sendMessage>[1]) => sendMessage(t, b, chatId);
+  if (!process.env.VAULT_PASSPHRASE) return send("⚠️ The document vault isn't switched on yet.");
+  const file = m.document ?? [...(m.photo ?? [])].sort((a, b) => b.width - a.width)[0];
+  const name = m.document?.file_name ?? `photo-${new Date().toISOString().slice(0, 10)}.jpg`;
+  if (!file) return;
+  if ((file.file_size ?? 0) > 20 * 1024 * 1024) return send("That file is over 20 MB, which is Telegram's limit for bots. Please send a smaller scan or PDF.");
+  const data = await downloadFile(file.file_id);
+  const path = await storeDocument(store.db, data, name);
+  const pending = { path, name, bytes: data.length };
+  const guessed = guessType(`${m.caption ?? ""} ${name}`);
+  if (guessed) return labelDocument(guessed, pending, chatId, store);
+  const id = String(Date.now() % 1e9);
+  await store.setSetting(`upload:${id}`, pending);
+  const types = Object.entries(DOC_TYPES) as [DocType, string][];
+  const rows = [];
+  for (let i = 0; i < types.length; i += 2) rows.push(types.slice(i, i + 2).map(([t, label]) => ({ text: label, callback_data: `dt:${id}:${t}` })));
+  return send(`🔒 Stored <b>${esc(name)}</b> encrypted. What is it?`, rows);
+}
+
+async function labelDocument(type: DocType, pending: { path: string; name: string; bytes: number }, chatId: string, store: Store) {
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  const key = type === "other" ? `other-${Date.now() % 1e9}` : type;
+  const old = docs[key];
+  if (old && old.path !== pending.path) await deleteDocument(store.db, old.path);
+  docs[key] = { type, ...pending, uploaded: new Date().toISOString() };
+  await store.setSetting("documents", docs);
+  const note = type === "passport" || type === "national_id" ? " It is never sent to any AI and only comes back to you via /docs." : "";
+  return sendMessage(`✅ Saved as <b>${esc(DOC_TYPES[type])}</b>${old ? " (replaced the old one)" : ""}.${note}\nSee all with /docs.`, undefined, chatId);
+}
+
+async function listDocuments(chatId: string, store: Store) {
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  const have = Object.entries(docs);
+  const missing = (["kcse", "transcript", "enrolment", "moringa", "icdl", "passport"] as DocType[]).filter((t) => !docs[t]);
+  const lines = [
+    "🗂 <b>Your documents</b> (encrypted)",
+    ...(have.length ? have.map(([, d]) => `• ${esc(DOC_TYPES[d.type])} — ${esc(d.name)}`) : ["Nothing stored yet."]),
+    missing.length ? `\nStill useful to add: ${missing.map((t) => DOC_TYPES[t]).join(", ")}. Just send me a scan or PDF.` : "",
+  ];
+  const buttons = have.map(([key, d]) => [{ text: `📥 ${DOC_TYPES[d.type]}`, callback_data: `dg:${key}` }]);
+  return sendMessage(lines.filter(Boolean).join("\n"), buttons.length ? buttons : undefined, chatId);
+}
+
+async function handleDocCallback(data: string, callbackId: string, chatId: string, store: Store) {
+  if (data.startsWith("dt:")) {
+    const [, id, type] = data.split(":");
+    const pending = await store.getSetting<{ path: string; name: string; bytes: number }>(`upload:${id}`);
+    if (!pending || "used" in pending || !(type in DOC_TYPES)) return answerCallback(callbackId, "That upload has expired — send it again.");
+    await answerCallback(callbackId, "Saved");
+    await store.setSetting(`upload:${id}`, { used: true });
+    return labelDocument(type as DocType, pending, chatId, store);
+  }
+  const key = data.slice(3);
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  const d = docs[key];
+  if (!d) return answerCallback(callbackId, "Not found");
+  await answerCallback(callbackId, "Sending…");
+  return sendDocument(chatId, d.name, await readDocument(store.db, d.path));
 }
