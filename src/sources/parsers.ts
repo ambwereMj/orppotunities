@@ -162,5 +162,78 @@ export function parsePage(html: string, pageUrl: string, src: SourceConfig): Lea
     seen.add(key);
     leads.push({ sourceId: src.id, type: src.type, title: text, url: abs, aggregator: false, watched: true });
   });
+  if (src.self) {
+    const title = ($("h1").first().text() || $("title").text() || src.id).replace(/\s+/g, " ").trim();
+    leads.unshift({ sourceId: src.id, type: src.type, title, url: pageUrl, aggregator: false, watched: true, recheck: true });
+  }
   return leads.slice(0, 15);
+}
+
+interface DevpostHackathon {
+  title: string;
+  url: string;
+  open_state?: string;
+  submission_period_dates?: string;
+  prize_amount?: string;
+  themes?: { name: string }[];
+  displayed_location?: { location?: string };
+  organization_name?: string;
+}
+
+/** Devpost public hackathon list: open, online hackathons (usually open worldwide). */
+export function parseDevpost(json: string, src: SourceConfig): Lead[] {
+  const { hackathons } = JSON.parse(json) as { hackathons: DevpostHackathon[] };
+  return hackathons
+    .filter((h) => h.url && h.title && (h.open_state ?? "open") === "open")
+    .map((h) => {
+      const prize = strip(h.prize_amount ?? "");
+      return {
+        sourceId: src.id,
+        type: "program" as const,
+        title: `${h.title} (hackathon)`,
+        provider: h.organization_name,
+        url: h.url,
+        aggregator: false,
+        summary: [prize && `Prizes: ${prize}`, h.submission_period_dates && `Dates: ${h.submission_period_dates}`, (h.themes ?? []).map((t) => t.name).join(", ")]
+          .filter(Boolean)
+          .join(" · "),
+        location: h.displayed_location?.location ?? "Online",
+        salary: prize || undefined,
+        tags: ["hackathon", ...(h.themes ?? []).map((t) => t.name)],
+      };
+    });
+}
+
+interface JobicyJob {
+  url: string;
+  jobTitle: string;
+  companyName?: string;
+  jobGeo?: string;
+  jobExcerpt?: string;
+  jobLevel?: string;
+  pubDate?: string;
+  annualSalaryMin?: number;
+  annualSalaryMax?: number;
+  salaryCurrency?: string;
+  jobIndustry?: string[];
+}
+
+/** Jobicy public remote-jobs API. Location comes from jobGeo ("Anywhere", "USA", "EMEA"…). */
+export function parseJobicy(json: string, src: SourceConfig): Lead[] {
+  const { jobs } = JSON.parse(json) as { jobs: JobicyJob[] };
+  return (jobs ?? [])
+    .filter((j) => j.url && j.jobTitle)
+    .map((j) => ({
+      sourceId: src.id,
+      type: src.type,
+      title: strip(j.jobTitle),
+      provider: j.companyName,
+      url: j.url,
+      aggregator: true,
+      summary: strip(j.jobExcerpt).slice(0, 1500),
+      location: j.jobGeo || "unspecified",
+      salary: j.annualSalaryMin ? `${j.salaryCurrency ?? "USD"} ${j.annualSalaryMin}–${j.annualSalaryMax ?? "?"}/yr` : undefined,
+      publishedAt: j.pubDate,
+      tags: [...(j.jobIndustry ?? []), j.jobLevel ?? ""].filter(Boolean),
+    }));
 }

@@ -2,13 +2,15 @@ export type OppType = "scholarship" | "internship" | "remote_work" | "program" |
 
 export interface SourceConfig {
   id: string;
-  kind: "rss" | "remoteok" | "remotive" | "himalayas" | "page";
+  kind: "rss" | "remoteok" | "remotive" | "himalayas" | "page" | "devpost" | "jobicy";
   url: string;
   type: OppType;
   aggregator?: boolean;
   match?: string[];
   /** Watched pages: also follow links to other sites (default: same site only). */
   external?: boolean;
+  /** Watched pages: the page itself describes one programme (e.g. Google Summer of Code). Re-checked weekly. */
+  self?: boolean;
   enabled: boolean;
 }
 
@@ -21,6 +23,8 @@ export interface Lead {
   aggregator: boolean;
   /** Lead came from a watched official page (already targeted by `match`). */
   watched?: boolean;
+  /** Re-check this URL every week even if seen before (programme pages that open once a year). */
+  recheck?: boolean;
   summary?: string;
   provider?: string;
   /** Structured fields some APIs give us directly (job boards). */

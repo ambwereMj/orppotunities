@@ -28,7 +28,7 @@ sources:
     url: https://scholarship-positions.com/feed/
     type: scholarship
     aggregator: true
-    enabled: true
+    enabled: false   # connection refused every day since 12 Nov (site blocks bots)
   - id: scholars4dev
     kind: rss
     url: https://www.scholars4dev.com/feed/
@@ -73,7 +73,7 @@ sources:
     type: scholarship
     match: [engineering, electr, computer, robot, embedded, data]
     external: true   # the catalogue links to each programme's own site
-    enabled: true
+    enabled: false   # catalogue is built by JavaScript; no links readable without a browser
   - id: mext_kenya
     kind: page
     url: https://www.ke.emb-japan.go.jp/itpr_en/education.html
@@ -97,7 +97,7 @@ sources:
     url: https://www.campuschina.org/scholarships/index.html
     type: scholarship
     match: [scholarship, CSC]
-    enabled: true
+    enabled: false   # connection refused every day since 12 Nov (site blocks bots)
   - id: turkiye_burslari
     kind: page
     url: https://www.turkiyeburslari.gov.tr/
@@ -109,24 +109,28 @@ sources:
     url: https://stipendiumhungaricum.hu/
     type: scholarship
     match: [application, call, scholarship]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: swedish_institute
     kind: page
     url: https://si.se/en/apply/scholarships/
     type: scholarship
     match: [scholarship, global professionals]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: mitacs_globalink
     kind: page
     url: https://www.mitacs.ca/our-programs/globalink-research-internship-students/
     type: internship
     match: [globalink, research internship, apply]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: daad_rise
     kind: page
     url: https://www.daad.de/rise/en/
     type: internship
     match: [RISE, internship, apply]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: oist_internship
     kind: page
@@ -139,6 +143,7 @@ sources:
     url: https://vsrp.kaust.edu.sa/
     type: internship
     match: [apply, internship, VSRP]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: huawei_seeds
     kind: page
@@ -173,6 +178,11 @@ sources:
     url: https://himalayas.app/jobs/api?limit=100
     type: remote_work
     enabled: true
+  - id: jobicy
+    kind: jobicy
+    url: https://jobicy.com/api/v2/remote-jobs?count=50
+    type: remote_work
+    enabled: true
   # Wellfound: read-only by hand — no automation (terms of service).
 
   # ── Paid programs & competitions ──────────────────────────────────────
@@ -181,24 +191,34 @@ sources:
     url: https://summerofcode.withgoogle.com/
     type: program
     match: [apply, contributor, timeline]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: outreachy
     kind: page
     url: https://www.outreachy.org/apply/
     type: program
     match: [apply, internship, initial application]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: lfx
     kind: page
     url: https://mentorship.lfx.linuxfoundation.org/
     type: program
     match: [mentorship, apply]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: mlh_fellowship
     kind: page
     url: https://fellowship.mlh.io/
     type: program
     match: [apply, fellowship]
+    self: true   # this page describes one programme; re-checked weekly
+    enabled: true
+
+  - id: devpost
+    kind: devpost
+    url: https://devpost.com/api/hackathons?status[]=open&challenge_type[]=online
+    type: program
     enabled: true
 
   # ── Kenya employers & programs ────────────────────────────────────────
@@ -231,9 +251,10 @@ sources:
     url: https://www.alxafrica.com/
     type: skills
     match: [apply, program, scholarship, software]
+    self: true   # this page describes one programme; re-checked weekly
     enabled: true
   - id: myjobmag_kenya
     kind: rss
     url: https://www.myjobmag.co.ke/feeds
     type: internship
-    enabled: true
+    enabled: false   # feed returned no items for 7 days

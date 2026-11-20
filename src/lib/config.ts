@@ -56,12 +56,13 @@ export function loadProfile(path = "profile.yaml"): Profile {
 
 const SourceSchema = z.object({
   id: z.string(),
-  kind: z.enum(["rss", "remoteok", "remotive", "himalayas", "page"]),
+  kind: z.enum(["rss", "remoteok", "remotive", "himalayas", "page", "devpost", "jobicy"]),
   url: z.string().url(),
   type: z.enum(["scholarship", "internship", "remote_work", "program", "skills"]),
   aggregator: z.boolean().optional(),
   match: z.array(z.string()).optional(),
   external: z.boolean().optional(),
+  self: z.boolean().optional(),
   enabled: z.boolean(),
 });
 

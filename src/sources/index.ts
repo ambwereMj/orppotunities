@@ -1,7 +1,7 @@
 import type { Lead, SourceConfig } from "../types.js";
 import { politeFetch } from "../lib/http.js";
 import { log } from "../lib/log.js";
-import { parseHimalayas, parsePage, parseRemoteOk, parseRemotive, parseRss } from "./parsers.js";
+import { parseDevpost, parseHimalayas, parseJobicy, parsePage, parseRemoteOk, parseRemotive, parseRss } from "./parsers.js";
 
 export interface SourceRun {
   sourceId: string;
@@ -24,6 +24,10 @@ export async function fetchSource(src: SourceConfig): Promise<Lead[]> {
       return parseHimalayas(res.text, src);
     case "page":
       return parsePage(res.text, res.url, src);
+    case "devpost":
+      return parseDevpost(res.text, src);
+    case "jobicy":
+      return parseJobicy(res.text, src);
   }
 }
 

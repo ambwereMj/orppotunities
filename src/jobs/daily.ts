@@ -32,7 +32,9 @@ async function main() {
   log.info("fetched", { leads: leads.length, sources: runs.length, failed: runs.filter((r) => !r.ok).length });
 
   const unique = dedupeLeads(leads);
-  const hashOf = (l: { url: string }) => hash(normalizeUrl(l.url));
+  // Programme pages (recheck) get a new "seen" key every week, so a call that opens later is noticed.
+  const week = `${new Date().getUTCFullYear()}-w${Math.ceil(((Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 1)) / 86_400_000 + 1) / 7)}`;
+  const hashOf = (l: { url: string; recheck?: boolean }) => hash(normalizeUrl(l.url) + (l.recheck ? `#${week}` : ""));
   const seen = store ? await store.seenHashes(unique.map(hashOf)) : new Set<string>();
   const fresh = unique.filter((l) => !seen.has(hashOf(l)));
 
