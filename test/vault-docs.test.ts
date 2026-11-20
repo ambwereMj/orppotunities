@@ -6,7 +6,8 @@ import type { Store } from "../src/db/store.js";
 
 describe("document types", () => {
   it.each([
-    ["KCSE result slip.jpg", "kcse"],
+    ["KCSE result slip.jpg", "kcse_results"],
+    ["KCSE certificate.pdf", "kcse"],
     ["JKUAT_transcript_2026.pdf", "transcript"],
     ["admission letter", "enrolment"],
     ["Moringa certificate.pdf", "moringa"],

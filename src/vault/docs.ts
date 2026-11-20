@@ -9,7 +9,8 @@ import { env } from "../lib/config.js";
  */
 export const DOC_TYPES = {
   cv: "CV",
-  kcse: "KCSE certificate / result slip",
+  kcse: "KCSE certificate",
+  kcse_results: "KCSE result slip",
   transcript: "JKUAT transcript",
   enrolment: "JKUAT enrolment / admission letter",
   moringa: "Moringa certificate",
@@ -26,6 +27,7 @@ export function checklistDocs(types: string[]): string[] {
   for (const t of types) {
     if (t === "transcript") out.add("transcript");
     if (t === "kcse" || t === "moringa" || t === "icdl") out.add("certificates");
+    if (t === "kcse_results") out.add("kcse_results");
     if (t === "enrolment") out.add("admission");
     if (t === "passport" || t === "national_id") out.add("passport");
   }
@@ -38,8 +40,9 @@ export function checklistDocs(types: string[]): string[] {
 /** Guess the type from a caption or file name ("transcript.pdf", "KCSE cert"). */
 export function guessType(text = ""): DocType | null {
   const t = text.toLowerCase();
-  if (/kcse|result slip|secondary/.test(t)) return "kcse";
-  if (/transcript|results? (slip|sheet)|academic record/.test(t)) return "transcript";
+  if (/kcse/.test(t) && /results?/.test(t)) return "kcse_results";
+  if (/kcse|secondary|leaving cert/.test(t)) return "kcse";
+  if (/transcript|academic record|semester results/.test(t)) return "transcript";
   if (/admission|enrol?ment|student id|letter of (admission|enrol)/.test(t)) return "enrolment";
   if (/moringa/.test(t)) return "moringa";
   if (/icdl|driving licen[cs]e/.test(t)) return "icdl";

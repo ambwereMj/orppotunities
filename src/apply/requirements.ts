@@ -86,9 +86,25 @@ export function buildChecklist(pageText: string, p: Profile, opts: { gpaMandator
       case "passport":
         return { id, label, status: "you", note: p.passport ? "You have a passport — upload the scan yourself. Its number is never sent to any AI." : "Passport status unknown.", quote: q };
       case "transcript":
-        return { id, label, status: has("transcript") ? "ready" : "you", note: has("transcript") ? "In your vault." : "Get your JKUAT transcript (Academic office / student portal).", quote: q };
+        return {
+          id,
+          label,
+          status: has("transcript") ? "ready" : "you",
+          note: has("transcript")
+            ? "In your vault."
+            : `Get your JKUAT transcript (Academic office / student portal).${has("kcse_results") ? " Where secondary results are accepted, your KCSE result slip is in your vault." : ""}`,
+          quote: q,
+        };
       case "certificates":
-        return { id, label, status: has("certificates") ? "ready" : "you", note: has("certificates") ? "In your vault." : "Scan your KCSE certificate/result slip, Moringa and ICDL certificates.", quote: q };
+        return {
+          id,
+          label,
+          status: has("certificates") ? "ready" : "you",
+          note: has("certificates")
+            ? `In your vault (KCSE certificate, Moringa, ICDL${has("kcse_results") ? ", KCSE result slip" : ""}).`
+            : "Scan your KCSE certificate and result slip, Moringa and ICDL certificates, and send them to the bot.",
+          quote: q,
+        };
       case "portfolio":
         return { id, label, status: "draft", note: "Your projects (Applaude, Luxe Condos) are private repos — make a public demo/screenshots or a public repo before linking.", quote: q };
       case "fee":

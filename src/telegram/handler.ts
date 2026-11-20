@@ -282,7 +282,7 @@ async function labelDocument(type: DocType, pending: { path: string; name: strin
 async function listDocuments(chatId: string, store: Store) {
   const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
   const have = Object.entries(docs);
-  const missing = (["kcse", "transcript", "enrolment", "moringa", "icdl", "passport"] as DocType[]).filter((t) => !docs[t]);
+  const missing = (["kcse", "kcse_results", "transcript", "enrolment", "moringa", "icdl", "passport"] as DocType[]).filter((t) => !docs[t]);
   const lines = [
     "🗂 <b>Your documents</b> (encrypted)",
     ...(have.length ? have.map(([, d]) => `• ${esc(DOC_TYPES[d.type])} — ${esc(d.name)}`) : ["Nothing stored yet."]),
