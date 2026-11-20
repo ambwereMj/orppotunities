@@ -6,6 +6,7 @@ import { preparePack } from "../apply/pack.js";
 import { checklistText } from "../apply/requirements.js";
 import { DOC_TYPES, checklistDocs, deleteDocument, guessType, readDocument, storeDocument, type DocType, type StoredDoc } from "../vault/docs.js";
 import { downloadFile } from "./api.js";
+import { extractPage, pageCount } from "../vault/pages.js";
 import { publishProfile } from "../lib/profile-sync.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
 import { LINK_DAYS, trackerLink } from "../web/tracker.js";
@@ -26,6 +27,8 @@ const HELP = `<b>Commands</b>
 /tracker – everything by status
 /web – private link to the tracker page (edit status, notes, blockers)
 /docs – your stored documents (send me a scan or PDF to add one)
+/page kcse 2 – keep only page 2 of a stored PDF (the full scan is kept too)
+/label transcript kcse – change what a stored document is
 /status – agent status & AI spend
 /pause – stop all automation (kill switch)
 /resume – start again
@@ -157,6 +160,10 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
       return reply(`<b>Deadlines in the next 7 days</b>\n${listRows(await store.deadlinesWithin(7), "No saved deadlines this week.")}`);
     case "/docs":
       return listDocuments(String(chatId), store);
+    case "/page":
+      return keepOnePage(text, String(chatId), store);
+    case "/label":
+      return relabelDocument(text, String(chatId), store);
     case "/web": {
       const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "opportunity-agent-mocha.vercel.app";
       return reply(`🗂 <a href="${trackerLink(`https://${host}`)}">Open your tracker</a>\nPrivate link — don't forward it. It expires in ${LINK_DAYS} days.`);
@@ -247,7 +254,7 @@ async function receiveDocument(m: Msg, chatId: string, store: Store) {
   if ((file.file_size ?? 0) > 20 * 1024 * 1024) return send("That file is over 20 MB, which is Telegram's limit for bots. Please send a smaller scan or PDF.");
   const data = await downloadFile(file.file_id);
   const path = await storeDocument(store.db, data, name);
-  const pending = { path, name, bytes: data.length };
+  const pending = { path, name, bytes: data.length, pages: (await pageCount(data)) ?? undefined };
   const guessed = guessType(`${m.caption ?? ""} ${name}`);
   if (guessed) return labelDocument(guessed, pending, chatId, store);
   const id = String(Date.now() % 1e9);
@@ -258,14 +265,17 @@ async function receiveDocument(m: Msg, chatId: string, store: Store) {
   return send(`🔒 Stored <b>${esc(name)}</b> encrypted. What is it?`, rows);
 }
 
-async function labelDocument(type: DocType, pending: { path: string; name: string; bytes: number }, chatId: string, store: Store) {
+async function labelDocument(type: DocType, pending: { path: string; name: string; bytes: number; pages?: number }, chatId: string, store: Store) {
   const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
   const key = type === "other" ? `other-${Date.now() % 1e9}` : type;
   const old = docs[key];
   if (old && old.path !== pending.path) await deleteDocument(store.db, old.path);
   docs[key] = { type, ...pending, uploaded: new Date().toISOString() };
   await store.setSetting("documents", docs);
-  const note = type === "passport" || type === "national_id" ? " It is never sent to any AI and only comes back to you via /docs." : "";
+  let note = type === "passport" || type === "national_id" ? " It is never sent to any AI and only comes back to you via /docs." : "";
+  if (pending.pages && pending.pages > 1 && type !== "cv" && type !== "transcript" && type !== "other") {
+    note += `\n📄 This PDF has ${pending.pages} pages. If only one of them is the ${esc(DOC_TYPES[type])}, send <code>/page ${key} 2</code> (with the right page number) and I'll keep just that page.`;
+  }
   return sendMessage(`✅ Saved as <b>${esc(DOC_TYPES[type])}</b>${old ? " (replaced the old one)" : ""}.${note}\nSee all with /docs.`, undefined, chatId);
 }
 
@@ -305,4 +315,49 @@ async function queueForm(store: Store, key: string, url?: string) {
   const rest = queue.filter((r) => r.key !== key);
   rest.push({ key, ...(url ? { url } : {}), requested: new Date().toISOString() });
   await store.setSetting("form_queue", rest.slice(-10));
+}
+
+/** "/page kcse 2": keep only one page of a stored PDF; the full scan is kept as "<slot>_full". */
+async function keepOnePage(text: string, chatId: string, store: Store) {
+  const send = (t: string) => sendMessage(t, undefined, chatId);
+  const [, slotRaw, nRaw] = text.trim().split(/\s+/);
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  const slot = (slotRaw ?? "").toLowerCase();
+  const n = Number(nRaw);
+  if (!slot || !docs[slot] || !Number.isInteger(n)) {
+    return send(`Usage: <code>/page kcse 2</code>. Stored: ${Object.keys(docs).map((k) => `<code>${esc(k)}</code>`).join(", ") || "nothing yet"}.`);
+  }
+  const d = docs[slot];
+  const data = await readDocument(store.db, d.path);
+  const count = await pageCount(data);
+  if (!count) return send(`<b>${esc(d.name)}</b> isn't a PDF, so it has no pages to pick from.`);
+  if (n < 1 || n > count) return send(`<b>${esc(d.name)}</b> has ${count} page(s). Send <code>/page ${esc(slot)} N</code> with N from 1 to ${count}.`);
+  const { page } = await extractPage(data, n);
+  const name = d.name.replace(/\.pdf$/i, "") + ` (page ${n}).pdf`;
+  const path = await storeDocument(store.db, page, name);
+  const fullKey = `${slot}_full`;
+  if (docs[fullKey] && docs[fullKey].path !== d.path) await deleteDocument(store.db, docs[fullKey].path);
+  docs[fullKey] = { ...d, type: "other", name: `${d.name} (full scan)` };
+  docs[slot] = { ...d, path, name, bytes: page.length, uploaded: new Date().toISOString() };
+  await store.setSetting("documents", docs);
+  await sendDocument(chatId, name, page, `✅ Your ${esc(DOC_TYPES[d.type])} is now just page ${n} of ${count}. Check it's the right page. The full scan is kept under /docs.`);
+}
+
+/** "/label transcript kcse": change what a stored document is. */
+async function relabelDocument(text: string, chatId: string, store: Store) {
+  const send = (t: string) => sendMessage(t, undefined, chatId);
+  const [, fromRaw, toRaw] = text.trim().split(/\s+/);
+  const from = (fromRaw ?? "").toLowerCase();
+  const to = (toRaw ?? "").toLowerCase() as DocType;
+  const docs = (await store.getSetting<Record<string, StoredDoc>>("documents")) ?? {};
+  if (!docs[from] || !(to in DOC_TYPES)) {
+    return send(`Usage: <code>/label transcript kcse</code>. Stored: ${Object.keys(docs).map((k) => `<code>${esc(k)}</code>`).join(", ") || "nothing yet"}. Types: ${Object.keys(DOC_TYPES).map((t) => `<code>${t}</code>`).join(", ")}.`);
+  }
+  const d = docs[from];
+  delete docs[from];
+  const key = to === "other" ? `other-${Date.now() % 1e9}` : to;
+  if (docs[key]) docs[`${key}_previous`] = { ...docs[key], type: "other", name: `${docs[key].name} (previous ${DOC_TYPES[to]})` };
+  docs[key] = { ...d, type: to };
+  await store.setSetting("documents", docs);
+  return send(`✅ <b>${esc(d.name)}</b> is now your ${esc(DOC_TYPES[to])}.${docs[`${key}_previous`] ? " The one stored there before is kept as 'previous' in /docs." : ""}`);
 }
