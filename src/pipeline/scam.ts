@@ -9,6 +9,8 @@ interface Rule {
   re: RegExp;
   reason: string;
   reject: boolean;
+  /** A fee rule: only a flag (not a rejection) on official programme pages. */
+  fee?: boolean;
 }
 
 const RULES: Rule[] = [
@@ -17,11 +19,13 @@ const RULES: Rule[] = [
     re: /(pay|send|deposit)\b[^.]{0,40}\b(processing|registration|application|admin(istration)?|visa processing|training|kit|onboarding|placement|activation)\s*fee/i,
     reason: "asks you to pay a fee",
     reject: true,
+    fee: true,
   },
   {
     re: /(processing|registration|activation|placement|onboarding|training)\s*fee\s*(of|:)?\s*(ksh|kes|usd|\$|€|£)\s*\d/i,
     reason: "charges a processing/registration fee",
     reject: true,
+    fee: true,
   },
   { re: /(upfront|advance) (payment|fee)|pay (before|to) (start|begin|secure)/i, reason: "asks for upfront payment", reject: true },
   { re: /(100\s*%|guaranteed)\s*(acceptance|admission|approval|visa|placement|job)|guarantee(d)? (you )?(a )?(scholarship|job|admission)/i, reason: "promises guaranteed acceptance", reject: false },
@@ -34,13 +38,13 @@ const RULES: Rule[] = [
 
 const FREE_MAIL = /@(gmail|yahoo|hotmail|outlook|live|aol|proton(mail)?|ymail|mail|gmx|icloud|zoho)\.(com|me|net)$/i;
 
-export function scamCheck(pageText: string, x: Extracted | null, officialUrl: string): ScamResult {
+export function scamCheck(pageText: string, x: Extracted | null, officialUrl: string, opts: { officialSource?: boolean } = {}): ScamResult {
   const reasons: string[] = [];
   let reject = false;
   for (const r of RULES) {
     if (r.re.test(pageText)) {
       reasons.push(r.reason);
-      reject ||= r.reject;
+      reject ||= r.reject && !(r.fee && opts.officialSource);
     }
   }
   if (x?.applicationFee.value && !/no (application )?fee|free|waived|none/i.test(x.applicationFee.value)) {
@@ -48,7 +52,9 @@ export function scamCheck(pageText: string, x: Extracted | null, officialUrl: st
     const host = new URL(officialUrl).hostname;
     const institutional = /\.(edu|ac|gov|go|int)(\.[a-z]{2})?$|\.edu\.[a-z]{2}$/.test(host);
     reasons.push(`application fee: ${x.applicationFee.value}`);
-    if (!institutional) reject = true;
+    // Fees on institutional domains, or on official programme pages we watch directly
+    // (e.g. OIST's application fee), are shown as a flag; anywhere else they are rejected.
+    if (!institutional && !opts.officialSource) reject = true;
   }
   const freeMails = (x?.contactEmails ?? []).filter((e) => FREE_MAIL.test(e));
   if (freeMails.length) reasons.push(`unofficial email domain: ${freeMails.join(", ")}`);

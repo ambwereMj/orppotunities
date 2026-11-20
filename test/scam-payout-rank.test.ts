@@ -40,6 +40,18 @@ describe("scam filter", () => {
     expect(scamCheck(clean, x, "https://admissions.uni.ac.uk/apply").flagged).toBe(true);
     expect(scamCheck(clean, x, "https://free-scholarships.example.com").reject).toBe(true);
   });
+  it("fee on an official programme page we watch (e.g. OIST) is flagged, not rejected", () => {
+    const x = extracted({ applicationFee: ev<string | null>("The application fee is 5,000 JPY", "q") });
+    const r = scamCheck(clean, x, "https://admissions.oist.jp/apply", { officialSource: true });
+    expect(r.reject).toBe(false);
+    expect(r.flagged).toBe(true);
+    expect(scamCheck(clean, x, "https://admissions.oist.jp/apply").reject).toBe(true);
+    const text = "Please pay the application fee of JPY 5,000 by credit card when you submit.";
+    expect(scamCheck(text, null, "https://admissions.oist.jp/apply", { officialSource: true }).reject).toBe(false);
+    // Upfront-payment and PIN requests are rejected everywhere, even on official pages.
+    expect(scamCheck("Make an upfront payment to start the programme.", null, "https://x.example", { officialSource: true }).reject).toBe(true);
+    expect(scamCheck("Send your M-Pesa PIN to confirm.", null, "https://x.example", { officialSource: true }).reject).toBe(true);
+  });
   it("'no application fee' is not a fee", () => {
     expect(scamCheck(clean, extracted({ applicationFee: ev<string | null>("No application fee", "q") }), "https://x.com").flagged).toBe(false);
   });

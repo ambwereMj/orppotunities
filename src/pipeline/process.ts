@@ -66,7 +66,7 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
       eligibility.reasons.push("couldn't find the official page — link is the listing site");
       if (eligibility.verdict === "eligible") eligibility.verdict = "check";
     }
-    const scam = scamCheck(`${pageText}\n${lead.summary ?? ""}`, x, officialUrl);
+    const scam = scamCheck(`${pageText}\n${lead.summary ?? ""}`, x, officialUrl, { officialSource: !!lead.watched && !lead.aggregator });
     if (scam.reject) {
       eligibility.verdict = "ineligible";
       eligibility.reasons.push(`rejected by scam filter: ${scam.reasons.join("; ")}`);

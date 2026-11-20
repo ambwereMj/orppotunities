@@ -40,6 +40,7 @@ sources:
     url: https://www.afterschoolafrica.com/feed/
     type: scholarship
     aggregator: true
+    manual_url: https://www.afterschoolafrica.com/category/scholarships/   # listed in the Sunday "check these yourself" reminder
     enabled: false   # robots.txt forbids automated reading — respected
   - id: opportunities_circle
     kind: rss
@@ -79,6 +80,7 @@ sources:
     url: https://www.ke.emb-japan.go.jp/itpr_en/education.html
     type: scholarship
     match: [MEXT, scholarship, monbukagakusho]
+    manual_url: https://www.ke.emb-japan.go.jp/itpr_en/education.html   # listed in the Sunday "check these yourself" reminder
     enabled: false   # site blocks bots (HTTP 403) — check by hand: ke.emb-japan.go.jp (MEXT opens ~April)
   - id: mastercard_foundation
     kind: page
@@ -91,7 +93,8 @@ sources:
     url: https://www.studyinkorea.go.kr/en/sub/gks/allnew_invite.do
     type: scholarship
     match: [GKS, scholarship, undergraduate, graduate]
-    enabled: false   # page moved (HTTP 404) — needs the new address
+    manual_url: https://www.studyinkorea.go.kr/en/main.do   # GKS-U opens ~Sep each year
+    enabled: false   # site not bot-friendly — in the Sunday "check these yourself" list
   - id: csc_china
     kind: page
     url: https://www.campuschina.org/scholarships/index.html
@@ -134,10 +137,11 @@ sources:
     enabled: true
   - id: oist_internship
     kind: page
-    url: https://www.oist.jp/research-internship-program
+    url: https://admissions.oist.jp/apply-research-internship
     type: internship
     match: [internship, apply]
-    enabled: false   # page moved (HTTP 404) — needs the new address
+    self: true   # this page describes one programme; re-checked weekly
+    enabled: true
   - id: kaust_vsrp
     kind: page
     url: https://vsrp.kaust.edu.sa/
@@ -147,10 +151,11 @@ sources:
     enabled: true
   - id: huawei_seeds
     kind: page
-    url: https://www.huawei.com/en/sustainability/the-latest/stories/seeds-for-the-future
+    url: https://www.huawei.com/ke/corporate-citizenship/seeds-for-the-future
     type: program
     match: [seeds for the future, kenya, apply]
-    enabled: false   # page moved (HTTP 404) — needs the new address
+    self: true   # this page describes one programme; re-checked weekly
+    enabled: true
 
   # ── Remote job boards (official APIs/feeds) ───────────────────────────
   - id: remoteok
@@ -162,6 +167,7 @@ sources:
     kind: remotive
     url: https://remotive.com/api/remote-jobs?category=software-dev
     type: remote_work
+    manual_url: https://remotive.com/remote-jobs/software-dev   # listed in the Sunday "check these yourself" reminder
     enabled: false   # robots.txt forbids automated reading of its API — respected
   - id: remotive_qa
     kind: remotive
@@ -227,25 +233,27 @@ sources:
     url: https://www.safaricom.co.ke/careers
     type: internship
     match: [intern, graduate, engineer, software, talent]
+    manual_url: https://www.safaricom.co.ke/careers   # listed in the Sunday "check these yourself" reminder
     enabled: false   # site blocks bots (HTTP 403) — check by hand: safaricom.co.ke/careers
   - id: kengen_careers
     kind: page
-    url: https://www.kengen.co.ke/index.php/careers.html
+    url: https://careers.kengen.co.ke/
     type: internship
     match: [intern, attachment, graduate, engineer]
-    enabled: false   # page moved (HTTP 404) — needs the new address
+    enabled: true   # new portal address (Nov 2026)
   - id: kplc_careers
     kind: page
     url: https://www.kplc.co.ke/careers
     type: internship
     match: [intern, attachment, graduate, engineer]
+    manual_url: https://www.kplc.co.ke/careers   # listed in the Sunday "check these yourself" reminder
     enabled: false   # site blocks bots (HTTP 403) — check by hand: kplc.co.ke
   - id: equity_careers
     kind: page
     url: https://equitygroupholdings.com/ke/careers
     type: internship
     match: [intern, graduate, software, engineer, technology]
-    enabled: false   # page moved (HTTP 404) — needs the new address
+    enabled: false   # official careers address not confirmed (Nov 2026)
   - id: alx_africa
     kind: page
     url: https://www.alxafrica.com/

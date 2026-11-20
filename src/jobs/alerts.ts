@@ -2,7 +2,7 @@
  * Runs every 3 hours: instant alerts, deadline reminders (14/7/3/1 days for saved items),
  * broken-source alerts, and the Sunday-evening weekly summary.
  */
-import { aiEnabled, settings } from "../lib/config.js";
+import { aiEnabled, loadManualChecks, settings } from "../lib/config.js";
 import { log } from "../lib/log.js";
 import { Store } from "../db/store.js";
 import { daysUntil } from "../pipeline/eligibility.js";
@@ -70,10 +70,30 @@ async function weeklySummary(store: Store) {
       `Saved: ${s.saved ?? 0} · Preparing: ${s.preparing ?? 0} · Waiting on you: ${s.waiting_on_me ?? 0}`,
       `Submitted: ${s.submitted ?? 0} · Interview: ${s.interview ?? 0} · Results: ${s.result ?? 0}`,
       ...(await refereeNudge()),
+      ...manualChecks(),
       aiEnabled() ? `AI spend this month: $${spent.toFixed(2)} of $${settings.aiMonthlyCapUsd}` : "Mode: free (no AI, $0)",
     ].join("\n"),
   );
   await store.setSetting("last_weekly", week);
+}
+
+/** Sites that forbid or block bots: a weekly list of links to check by hand. */
+function manualChecks(): string[] {
+  try {
+    const list = loadManualChecks();
+    if (!list.length) return [];
+    const names: Record<string, string> = {
+      afterschoolafrica: "AfterSchoolAfrica scholarships",
+      remotive: "Remotive remote dev jobs",
+      safaricom_careers: "Safaricom careers",
+      kplc_careers: "Kenya Power careers",
+      mext_kenya: "MEXT (Japan) scholarships – Kenya embassy",
+      gks_korea: "Global Korea Scholarship (opens ~Sep)",
+    };
+    return ["", "👀 <b>Check these yourself</b> (they don't allow bots):", ...list.map((m) => `• <a href="${esc(m.url)}">${esc(names[m.id] ?? m.id)}</a>`)];
+  } catch {
+    return [];
+  }
 }
 
 /** Reminder until an academic referee is on the profile (scholarships usually need one). */

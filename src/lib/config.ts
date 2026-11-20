@@ -63,8 +63,15 @@ const SourceSchema = z.object({
   match: z.array(z.string()).optional(),
   external: z.boolean().optional(),
   self: z.boolean().optional(),
+  manual_url: z.string().url().optional(),
   enabled: z.boolean(),
 });
+
+/** Sites we must not read automatically (robots.txt / bot blocking): the owner checks them by hand. */
+export function loadManualChecks(path = "sources.yaml"): { id: string; url: string }[] {
+  const doc = parse(readFileSync(path, "utf8")) as { sources: { id: string; manual_url?: string }[] };
+  return doc.sources.filter((s) => s.manual_url).map((s) => ({ id: s.id, url: s.manual_url! }));
+}
 
 export function loadSources(path = "sources.yaml"): SourceConfig[] {
   const doc = parse(readFileSync(path, "utf8")) as { sources: unknown[] };
