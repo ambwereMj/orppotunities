@@ -7,7 +7,7 @@ dist/
 
 # Personal data — NEVER commit. Lives in the encrypted vault / CI secrets.
 profile.yaml
-vault/
+/vault/
 *.pdf
 *.docx
 *CV*
