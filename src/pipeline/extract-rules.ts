@@ -218,8 +218,8 @@ export function looksLikeOpportunity(text: string, title = ""): boolean {
   return apply && cues.filter((c) => c.test(text)).length >= 2;
 }
 
-export function extractWithRules(pageText: string, officialUrl: string, lead: Lead, now = new Date()): Extracted | null {
-  if (!looksLikeOpportunity(pageText, lead.title)) return null;
+export function extractWithRules(pageText: string, officialUrl: string, lead: Lead, now = new Date(), opts: { fromFeed?: boolean } = {}): Extracted | null {
+  if (!opts.fromFeed && !looksLikeOpportunity(pageText, lead.title)) return null;
   const ss = sentences(pageText);
   const gpa = extractGpa(ss);
   const { funding, details } = extractFunding(ss, lead.type);

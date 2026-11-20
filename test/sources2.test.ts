@@ -49,3 +49,20 @@ describe("Jobicy", () => {
     expect(prefilter(leads[1]).keep).toBe(false);
   });
 });
+
+describe("sites that block bots from their pages", () => {
+  it("Devpost: item is built from the feed, labelled, never 'eligible'", async () => {
+    const { fromFeed } = await import("../src/pipeline/process.js");
+    const { profile } = await import("./helpers.js");
+    const [lead] = parseDevpost(
+      JSON.stringify({ hackathons: [{ title: "AI for Good", url: "https://ai4good.devpost.com/", open_state: "open", prize_amount: "$10,000", submission_period_dates: "Nov 01 - Dec 15, 2026", displayed_location: { location: "Online" } }] }),
+      src({ kind: "devpost" }),
+    );
+    const out = fromFeed(lead, profile, {});
+    expect(out.kind).toBe("stored");
+    if (out.kind !== "stored") return;
+    expect(out.opp.extracted.deadline.value).toBe("2026-12-15");
+    expect(out.opp.eligibility.verdict).toBe("check");
+    expect(out.opp.eligibility.reasons.join(" ")).toContain("blocks automated reading");
+  });
+});

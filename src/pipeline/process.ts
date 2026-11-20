@@ -24,6 +24,11 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     let resolved = !lead.aggregator;
 
     const first = await politeFetch(lead.url);
+    if ((first.status === 401 || first.status === 403) && lead.summary) {
+      // The site blocks bots from its pages (but publishes this item in its feed). Respect the block:
+      // build the item from the feed's own text, clearly labelled, and let the owner open the link.
+      return fromFeed(lead, profile, weights);
+    }
     if (first.status >= 400) return { kind: "error", reason: `HTTP ${first.status}` };
     html = first.text;
 
@@ -79,6 +84,26 @@ export async function processLead(lead: Lead, profile: Profile, budget: Budget, 
     if (e instanceof RobotsDisallowed) return { kind: "error", reason: "robots.txt disallows" };
     return { kind: "error", reason: String(e).slice(0, 300) };
   }
+}
+
+/** Item built from the source's feed text when its page blocks bots. Always "check", never "eligible". */
+export function fromFeed(lead: Lead, profile: Profile, weights: Weights): Outcome {
+  const text = [`${lead.title}.`, lead.summary, lead.location ? `Location: ${lead.location}.` : "", lead.salary ? `Pay: ${lead.salary}.` : ""]
+    .filter(Boolean)
+    .join(" ");
+  const x = extractWithRules(text, lead.url, lead, new Date(), { fromFeed: true });
+  if (!x) return { kind: "not_opportunity", reason: "nothing usable in the feed text" };
+  const eligibility = checkEligibility(x, lead, profile);
+  if (eligibility.verdict === "eligible") eligibility.verdict = "check";
+  eligibility.reasons.push("site blocks automated reading — details are from its feed; open the link to confirm");
+  const scam = scamCheck(text, x, lead.url);
+  if (scam.reject) {
+    eligibility.verdict = "ineligible";
+    eligibility.reasons.push(`rejected by scam filter: ${scam.reasons.join("; ")}`);
+  }
+  const payout = lead.type === "remote_work" ? payoutRoute(x.paymentMethods.value, text) : null;
+  const scored = rank(lead, x, eligibility, payout, weights);
+  return { kind: "stored", opp: { key: oppKey(lead.url), type: lead.type, lead, extracted: x, eligibility, scam, payout, scored } };
 }
 
 /** Run `fn` over items with at most `n` in flight. */

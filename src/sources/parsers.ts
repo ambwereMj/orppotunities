@@ -180,6 +180,12 @@ interface DevpostHackathon {
   organization_name?: string;
 }
 
+/** "Nov 01 - Dec 15, 2026" -> "Dec 15, 2026" (the end of the submission period). */
+export function deadlineFrom(period?: string): string | null {
+  const m = period?.match(/[-–]\s*([A-Z][a-z]{2,8}\.? \d{1,2},? \d{4})\s*$/);
+  return m ? m[1] : null;
+}
+
 /** Devpost public hackathon list: open, online hackathons (usually open worldwide). */
 export function parseDevpost(json: string, src: SourceConfig): Lead[] {
   const { hackathons } = JSON.parse(json) as { hackathons: DevpostHackathon[] };
@@ -194,7 +200,12 @@ export function parseDevpost(json: string, src: SourceConfig): Lead[] {
         provider: h.organization_name,
         url: h.url,
         aggregator: false,
-        summary: [prize && `Prizes: ${prize}`, h.submission_period_dates && `Dates: ${h.submission_period_dates}`, (h.themes ?? []).map((t) => t.name).join(", ")]
+        summary: [
+          prize && `Prizes: ${prize}.`,
+          h.submission_period_dates && `Submission period: ${h.submission_period_dates}.`,
+          deadlineFrom(h.submission_period_dates) && `Submission deadline: ${deadlineFrom(h.submission_period_dates)}.`,
+          (h.themes ?? []).map((t) => t.name).join(", "),
+        ]
           .filter(Boolean)
           .join(" · "),
         location: h.displayed_location?.location ?? "Online",
