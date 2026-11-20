@@ -103,3 +103,14 @@ describe("availability answers", () => {
     expect(answerField(f("Hours per week", "number"), p).value).toBe("14");
   });
 });
+
+describe("passport name", () => {
+  const p = { ...prof, name: "Ann Lee", legal_name: { surname: "ODHIAMBO", given_names: "MARY ANN" } };
+  it("fills names exactly as on the passport", () => {
+    expect(answerField(f("First name"), p).value).toBe("Mary");
+    expect(answerField(f("Middle name"), p).value).toBe("Ann");
+    expect(answerField(f("Surname"), p).value).toBe("Odhiambo");
+    expect(answerField(f("Given names"), p).value).toBe("Mary Ann");
+    expect(answerField(f("Full legal name"), p).value).toBe("Mary Ann Odhiambo");
+  });
+});

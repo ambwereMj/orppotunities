@@ -18,6 +18,8 @@ const EducationSchema = z.object({
 
 export const ProfileSchema = z.object({
   name: z.string(),
+  /** Exactly as on the passport — used for every application form. */
+  legal_name: z.object({ surname: z.string(), given_names: z.string() }).optional(),
   nationality: z.string(),
   country_of_residence: z.string(),
   timezone: z.string(),

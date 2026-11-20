@@ -67,8 +67,13 @@ export function answerField(f: FormField, p: Profile, storedDocs: DocType[] = []
   const uni = p.education.find((e) => e.current);
   const school = p.education.find((e) => e.level === "secondary");
   const ts = p.technical_skills ?? {};
-  const [first, ...rest] = p.name.split(/\s+/);
-  const last = rest.at(-1) ?? "";
+  // Passport name wins: given names "MELVINE JERRY" -> first "Melvine", middle "Jerry".
+  const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s'-])\p{L}/gu, (m) => m.toUpperCase());
+  const given = p.legal_name ? titleCase(p.legal_name.given_names).split(/\s+/) : p.name.split(/\s+/).slice(0, -1);
+  const first = given[0] ?? p.name.split(/\s+/)[0];
+  const middle = given.slice(1).join(" ");
+  const last = p.legal_name ? titleCase(p.legal_name.surname) : (p.name.split(/\s+/).at(-1) ?? "");
+  const fullName = p.legal_name ? `${given.join(" ")} ${last}` : p.name;
   const ok = (value: string | undefined | null, note = "From your profile."): Answer =>
     value ? { field: f, status: "filled", value: String(value), note } : { field: f, status: "you", note: "Not in your profile — fill this yourself." };
   const you = (note: string): Answer => ({ field: f, status: "you", note });
@@ -100,10 +105,11 @@ export function answerField(f: FormField, p: Profile, storedDocs: DocType[] = []
   }
 
   // Identity & contact.
-  if (has(t, /\b(first|given|fore) ?name\b/)) return ok(first);
-  if (has(t, /\b(last|family|sur) ?name\b|\bsurname\b/)) return ok(last);
-  if (has(t, /\bmiddle name\b/)) return you("Middle name — not in your profile.");
-  if (has(t, /\b(full )?name\b/) && !has(t, /(university|school|institution|referee|reference|company|organi[sz]ation|project|parent|guardian)/)) return ok(p.name);
+  if (has(t, /\bgiven names\b/)) return ok(given.join(" "), "Exactly as on your passport.");
+  if (has(t, /\b(first|given|fore) ?name\b/)) return ok(first, "As on your passport.");
+  if (has(t, /\b(last|family|sur) ?name\b|\bsurname\b/)) return ok(last, "As on your passport.");
+  if (has(t, /\bmiddle name/)) return middle ? ok(middle, "As on your passport.") : you("Middle name — not in your profile.");
+  if (has(t, /\b(full |legal )?name\b/) && !has(t, /(university|school|institution|referee|reference|company|organi[sz]ation|project|parent|guardian)/)) return ok(fullName, "Exactly as on your passport.");
   if (f.kind === "email" || has(t, /e-?mail/)) {
     if (has(t, /referee|reference|recommender/)) return you("Referee's email — choose which referee (see your profile).");
     return ok(c.email);
