@@ -37,7 +37,7 @@ const OTHER_FIELD_WORDS =
   /\b(law|legal|media|film|music|arts?|poetry|fashion|history|sports?|football|mba|finance|marketing|divinity|dyslexia|writing contest|creative writing|social work|business school)\b/i;
 // Word stems: "journalis" matches journalist/journalism, "nurs" nursing/nurses, "health" healthcare…
 const OTHER_FIELD_STEMS =
-  /\b(journalis|medic|nurs|dental|dentist|pharmac|theolog|teach|educat|agricultur|veterinar|health|psycholog|humanit|literat|touris|hospitality|nutrition|midwif|accountan|accounting|child (development|protection|rights)|early childhood|(person|patient)[- ]cent(red|ered) care|caregiv|palliative)\w*/i;
+  /\b(journalis|medic|nurs|dental|dentist|pharmac|theolog|teach|educat|agricultur|veterinar|health|psycholog|humanit|literat|touris|hospitality|nutrition|midwif|accountan|accounting|child (development|protection|rights)|child and youth|youth development|early childhood|(person|patient)[- ]cent(red|ered) care|caregiv|palliative)\w*/i;
 /** Job titles that state a country restriction, e.g. "(U.S. Based)", "(Remote @ Colombia)". */
 const TITLE_GEO_LOCK =
   /\b(u\.?s\.?|usa|uk|canada|eu|europe|latam|india|philippines)[- ]?(based|only|residents?)\b|\(remote\s*[@-]\s*(?!worldwide|anywhere|global|africa|kenya)[a-z ]+\)|\bremote\s*\((?!worldwide|anywhere|global|africa|kenya|emea)[a-z ,]+only\)/i;

@@ -19,7 +19,7 @@ export interface PreferenceResult {
 }
 
 const NEVER: [RegExp, string][] = [
-  [/\b(ai|llm|model) ?(trainer|training (jobs?|work|tasks?)|tutor|rater|evaluator)\b|\btrain(ing)? (ai|llms?|models?)\b|\brlhf\b|\b(ai|llm) coding tasks\b|\bdata (annotat|label)|\bannotat(or|ion) (jobs?|work|specialist)\b|\bsearch (quality )?rater\b|\bprompt (writer|engineer(ing)? tasks)\b|\boutlier\.ai\b|\bdataannotation\b/i, "AI-training / annotation work (you said no)"],
+  [/\b(ai|llm|model) ?(trainer|training (jobs?|work|tasks?)|tutor|rater|evaluator)\b|\btrain(ing)? (ai|llms?|models?)\b|\brlhf\b|\b(ai|llm) coding tasks\b|\bdata (annotat|label)|\bannotat(or|ion) (jobs?|work|specialist)\b|\bsearch (quality )?rater\b|\bprompt (writer|engineer(ing)? tasks)\b|\boutlier\.ai\b|\bdataannotation\b|\bexpert talent pool\b|\b(ai|llm) (expert|specialist) (network|pool)\b/i, "AI-training / annotation work (you said no)"],
   [/\bboot ?camps?\b/i, "bootcamp (you said no)"],
   [/\b(mooc|e-?learning|self-paced|free online (course|training)|online (course|courses|training|certificate|certification|learning programme|learning program))\b|\bonline (and|or) (free|self)/i, "online course (you said no unpaid online courses)"],
 ];
@@ -30,10 +30,15 @@ const EE_CE = /\b(electr\w*|computer|comput\w*|software|ict|information (and com
 const ALL_FIELDS = /\b(all|any|various|multiple|every) (fields?|disciplines?|subjects?|areas?|programmes?|programs?)\b|\bopen to all\b/i;
 const BUSINESS = /\b(mba|business (school|administration)|management (program|programme)|said business|global management|executive education|finance)\b/i;
 /** Roles that need a professional qualification you don't have (degree/licence in another field). */
-const LICENSED = /\b(nurse|nursing|physician|doctor|surgeon|dentist|pharmacist|pharmac\w*|attorney|lawyer|paralegal|legal counsel|cpa|accountant|bookkeep\w*|actuar\w*|auditor|therapist|psycholog\w*|counsel+or|clinical|patient|medical|endocrinolog\w*|cardiolog\w*|radiolog\w*|veterinar\w*|licensed|registered (nurse|dietitian)|social worker|teacher certification)\b/i;
+const LICENSED = /\b(nurse|nursing|physician|doctor|surgeon|dentist|pharmacist|pharmac\w*|attorney|lawyer|paralegal|counsel|legal|cpa|accountant|bookkeep\w*|actuar\w*|auditor|therapist|psycholog\w*|counsel+or|clinical|patient|medical|endocrinolog\w*|cardiolog\w*|radiolog\w*|veterinar\w*|licensed|registered (nurse|dietitian)|social worker|teacher certification)\b/i;
 const SENIOR = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|manager|architect|chief)\b/i;
 const TRAVEL = /\b(travel|flights?|airfare|air ticket|visa (fees|costs|support)|accommodation|in[- ]person|on[- ]site|onsite|held in|hosted in|conference|summit|exchange|study tour|abroad|relocation|residential)\b/i;
 const GROWTH = /\b(fellowships?|mentor\w*|internships?|research|leadership|award|prize|competition|hackathon|challenge|accelerator|incubat\w*|summer (school|program|programme)|exchange|grant|apprentice\w*|residency|open source|scholars? program)\b/i;
+
+const COUNTRY =
+  /\b(usa|us|united states|canada|mexico|brazil|argentina|colombia|chile|peru|uk|united kingdom|ireland|spain|portugal|france|germany|netherlands|poland|italy|sweden|norway|denmark|finland|switzerland|austria|belgium|romania|ukraine|india|pakistan|bangladesh|philippines|indonesia|vietnam|singapore|malaysia|thailand|japan|korea|china|hong kong|taiwan|australia|new zealand|israel|turkey|uae|saudi arabia|egypt|nigeria|south africa|latam|apac|europe|north america)\b/i;
+/** Common words in Portuguese/Spanish/French/German job titles (local-language roles). */
+const NON_ENGLISH_TITLE = /\b(analista|desarrollador|desenvolvedor|ingeniero|engenheiro|júnior|pleno|vaga|práctica|estagiário|stagiaire|ingénieur|développeur|entwickler|werkstudent|praktikum)\b/i;
 
 /** Years of experience the posting asks for (largest number stated), or null. */
 export function yearsRequired(text: string): number | null {
@@ -74,6 +79,11 @@ export function applyPreferences(lead: Lead, x: Extracted, el: EligibilityResult
   if (lead.type === "remote_work" || (lead.type === "internship" && PAID.test(all) && !GROWTH.test(title))) {
     // Jobs: anything within reach.
     if (SENIOR.test(title)) return { drop: "senior role", notes, boost };
+    const where = /,\s*([A-Z][a-zA-Z ]+)\s*$/.exec(title)?.[1] ?? "";
+    if (where && !/kenya|nairobi|africa|remote|worldwide|global|anywhere|emea/i.test(where) && COUNTRY.test(where)) return { drop: `based in ${where}`, notes, boost };
+    if (NON_ENGLISH_TITLE.test(title)) return { drop: "posting not in English (local-language role)", notes, boost };
+    const loc = lead.location ?? "";
+    if (loc && COUNTRY.test(loc) && !/kenya|africa|worldwide|anywhere|global|emea|remote|unspecified/i.test(loc)) return { drop: `limited to ${loc}`, notes, boost };
     if (LICENSED.test(title)) return { drop: "needs a professional licence", notes, boost };
     const yrs = yearsRequired(all);
     if (yrs !== null && yrs >= 3) return { drop: `asks for ${yrs}+ years of experience`, notes, boost };

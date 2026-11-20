@@ -65,6 +65,24 @@ describe("jobs: anything within reach", () => {
   });
 });
 
+describe("live run 20 Nov: jobs that slipped through", () => {
+  it.each([
+    ["Customer Success Engineer, Singapore", "based in Singapore"],
+    ["Analista de Testes e QA Júnior", "not in English"],
+    ["Legal Engineering Counsel", "licence"],
+    ["Expert Talent Pool Physical AI", "AI-training"],
+  ])("%s", (title, why) => expect(judge("remote_work", title, { funding: "paid" }).drop).toContain(why));
+  it("location limited to another country", () => {
+    const r = applyPreferences(lead({ type: "remote_work", title: "Partner Marketing Specialist", location: "Spain" }), extracted({ title: "Partner Marketing Specialist", funding: ev<Funding>("paid", "q") }), el());
+    expect(r.drop).toContain("Spain");
+  });
+  it("Kenya / worldwide / Africa stay", () => {
+    for (const loc of ["Worldwide", "Kenya", "Africa", "EMEA", "unspecified"]) {
+      expect(applyPreferences(lead({ type: "remote_work", title: "Support Engineer", location: loc }), extracted({ title: "Support Engineer", funding: ev<Funding>("paid", "q") }), el()).drop).toBeNull();
+    }
+  });
+});
+
 describe("other opportunities: travel or growth, never bootcamps/online courses", () => {
   it("drops bootcamps and online courses", () => {
     expect(judge("skills", "The Microsoft Datacenter Academy Skilling Bootcamp for Africans").drop).toContain("bootcamp");
