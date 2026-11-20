@@ -1,6 +1,9 @@
 import { Store, type OppRow } from "../db/store.js";
 import { aiEnabled, settings } from "../lib/config.js";
-import { answerCallback, editButtons, sendMessage } from "./api.js";
+import { answerCallback, askQuestion, editButtons, sendDocument, sendMessage } from "./api.js";
+import { loadProfile } from "../lib/config.js";
+import { preparePack } from "../apply/pack.js";
+import { checklistText } from "../apply/requirements.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
 import { LINK_DAYS, trackerLink } from "../web/tracker.js";
 
@@ -8,7 +11,7 @@ import { LINK_DAYS, trackerLink } from "../web/tracker.js";
 const FEEDBACK_DELTA: Record<string, number> = { apply: 2, save: 1, skip: -0.5, ni: -2 };
 const STATUS: Record<string, string> = { apply: "preparing", save: "saved", skip: "skipped", ni: "not_interested" };
 const ACK: Record<string, string> = {
-  apply: "Marked as preparing ✅",
+  apply: "Preparing your application pack…",
   save: "Saved 💾 — you'll get deadline reminders",
   skip: "Skipped",
   ni: "Got it — fewer like this 🚫",
@@ -32,7 +35,7 @@ function listRows(rows: OppRow[], empty: string) {
 }
 
 export interface TgUpdate {
-  message?: { chat: { id: number; type?: string }; text?: string };
+  message?: { chat: { id: number; type?: string }; text?: string; message_id?: number; reply_to_message?: { message_id: number } };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
 }
 
@@ -63,7 +66,7 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
       return reply(formatEvidence(row));
     }
     if (!STATUS[action]) return answerCallback(u.callback_query.id, "Unknown action");
-    await store.setStatus(key, STATUS[action], action === "apply" ? { blocking: "Application assistant arrives in Phase 3 — apply via the official page for now" } : {});
+    await store.setStatus(key, STATUS[action]);
     await store.addFeedback(key, action);
     const d = FEEDBACK_DELTA[action];
     await store.bumpWeight(`type:${row.type}`, d / 2);
@@ -74,20 +77,29 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
       [{ text: `✔ ${ACK[action].split(" —")[0]}`, callback_data: `src:${key}` }],
       [{ text: "📄 Show sources", callback_data: `src:${key}` }, { text: "🔗 Official page", url: row.official_url }],
     ]);
-    if (action === "apply") {
-      const x = row.extracted;
-      await reply(
-        [
-          `<b>Next steps: ${esc(row.title)}</b>`,
-          x.howToApply.value ? `How to apply (from the page): <i>${esc(x.howToApply.value)}</i>` : "How to apply isn't stated clearly — check the page.",
-          `Deadline: ${esc(deadlineText(row))}`,
-          row.verdict === "check" ? `Check first: ${esc(row.eligibility.reasons.join("; "))}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      );
-    }
+    if (action === "apply") await sendApplicationPack(row, String(chatId), store);
     return;
+  }
+
+  // Answers to questions the agent asked ("Reply to this message with…").
+  const replyTo = u.message?.reply_to_message?.message_id;
+  if (replyTo) {
+    const q = await store.getSetting<{ key: string; item: string }>(`question:${replyTo}`);
+    if (q) {
+      const answer = (u.message?.text ?? "").trim().slice(0, 500);
+      if (!answer) return reply("I couldn't read that answer — please reply with text.");
+      const answers = (await store.getSetting<Record<string, string>>("answers")) ?? {};
+      answers[q.item] = answer;
+      await store.setSetting("answers", answers);
+      await store.setSetting(`question:${replyTo}`, { ...q, answered: true });
+      const row = await store.get(q.key);
+      if (row) {
+        await store.setStatus(q.key, "preparing", { blocking: null, notes: [row.notes, `${q.item}: ${answer}`].filter(Boolean).join("\n") });
+        await reply(`✅ Saved your ${esc(q.item)}. I'll use it for this and future applications.`);
+        return sendApplicationPack(row, String(chatId), store);
+      }
+      return reply(`✅ Saved your ${esc(q.item)}.`);
+    }
   }
 
   const text = (u.message?.text ?? "").trim();
@@ -125,4 +137,63 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
     default:
       return reply(`I didn't understand that.\n\n${HELP}`);
   }
+}
+
+/** Build and send the application pack: checklist, tailored CV, letter outline, referee drafts. */
+export async function sendApplicationPack(row: OppRow, chatId: string, store: Store) {
+  const send = (t: string) => sendMessage(t, undefined, chatId);
+  let prof;
+  try {
+    prof = loadProfile();
+  } catch {
+    return send("⚠️ Your profile isn't available to the bot yet, so I can't build the pack. I've marked it as preparing.");
+  }
+  const answers = (await store.getSetting<Record<string, string>>("answers")) ?? {};
+  if (answers.GPA && !prof.gpa) prof = { ...prof, gpa: answers.GPA };
+
+  await send(`⏳ Preparing your application pack for <b>${esc(row.title)}</b>…`);
+  const pack = await preparePack(row, prof);
+
+  if (pack.closed) {
+    await store.setStatus(row.key, "skipped", { blocking: `Official page says "${pack.closed}"` });
+    return send(`🚫 The official page now says "<i>${esc(pack.closed)}</i>". I've moved it to Skipped. <a href="${esc(row.official_url)}">Check the page</a>.`);
+  }
+
+  const missing = pack.checklist.filter((i) => i.status === "missing");
+  const head = [
+    `📋 <b>Checklist — ${esc(row.title)}</b>`,
+    `Deadline: ${esc(deadlineText(row))}`,
+    row.verdict === "check" ? `🔎 Check eligibility first: ${esc(row.eligibility.reasons.join("; "))}` : "",
+    pack.pageFetched ? "" : "⚠️ I couldn't open the official page just now, so this checklist is based on what I saved earlier.",
+    "",
+    checklistText(pack.checklist, esc),
+    "",
+    pack.noBots
+      ? "🤚 This site doesn't allow bots, so I won't fill anything in there. Use the files below and apply by hand."
+      : "When you're ready, apply on the official page. You always do the final submit yourself.",
+  ].filter((l) => l !== "");
+  await sendMessage(head.join("\n"), [[{ text: "🔗 Open official page", url: row.official_url }]], chatId);
+
+  for (const f of pack.files) await sendDocument(chatId, f.name, f.data);
+  await send("📎 Above: your CV tailored to this page (re-ordered, nothing added) and a letter <b>outline</b>. Write the red parts in your own words.");
+
+  if (pack.referees.length && pack.checklist.some((i) => i.id === "recommendation")) {
+    await sendMessage(
+      "✉️ Referee requests (drafts). Tap one to open it in your email app, then read it and send it yourself:",
+      pack.referees.map((r) => [{ text: `Email ${r.name}`, url: r.href }]),
+      chatId,
+    );
+  }
+
+  if (missing.length) {
+    await store.setStatus(row.key, "waiting_on_me", { blocking: missing.map((m) => m.label).join(", ") });
+    for (const m of missing) {
+      if (m.id === "gpa") {
+        const id = await askQuestion(chatId, `⛔ <b>${esc(row.title)}</b> asks for your GPA. Reply to this message with it (e.g. "3.4/4.0"), or ignore this to stop here.`);
+        if (id) await store.setSetting(`question:${id}`, { key: row.key, item: "GPA" });
+      }
+    }
+    return send(`⏸ Paused on: ${esc(missing.map((m) => m.label).join(", "))}. It's in your tracker as "Waiting on me".`);
+  }
+  await store.setStatus(row.key, "preparing", { blocking: null });
 }

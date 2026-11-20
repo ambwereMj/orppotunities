@@ -64,3 +64,33 @@ export function answerCallback(id: string, text: string) {
 export function editButtons(chatId: number | string, messageId: number, buttons: InlineButton[][]) {
   return call("editMessageReplyMarkup", { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: buttons } });
 }
+
+/** Send a file (e.g. a tailored CV) to a chat. */
+export async function sendDocument(chatId: string, name: string, data: Buffer, caption?: string) {
+  if (settings.dryRun) {
+    log.info("[dry-run] telegram sendDocument", { name, bytes: data.length });
+    return { ok: true };
+  }
+  const form = new FormData();
+  form.append("chat_id", chatId);
+  if (caption) {
+    form.append("caption", caption);
+    form.append("parse_mode", "HTML");
+  }
+  form.append("document", new Blob([new Uint8Array(data)]), name);
+  const r = await fetch(`https://api.telegram.org/bot${env("TELEGRAM_BOT_TOKEN")}/sendDocument`, { method: "POST", body: form });
+  const j = (await r.json()) as { ok: boolean; description?: string };
+  if (!j.ok) log.error("telegram error", { method: "sendDocument", description: j.description });
+  return j;
+}
+
+/** Ask a question the owner answers by replying (Telegram shows a reply box). Returns the message id. */
+export async function askQuestion(chatId: string, text: string): Promise<number | null> {
+  const r = (await call("sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: { force_reply: true, input_field_placeholder: "Type your answer" },
+  })) as { ok: boolean; result?: { message_id?: number } };
+  return r.ok ? (r.result?.message_id ?? null) : null;
+}
