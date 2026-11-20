@@ -10,7 +10,7 @@ Everything runs on free tiers ($0/month): GitHub Actions (public repo), Supabase
 | 1 | Sources → verify → filter → rank → Telegram digest, alerts, kill switch, source-health alerts | ✅ live |
 | 2 | Learning from your buttons, deadline reminders, web tracker (`/web`), CV generator, academic-referee reminder | ✅ live |
 | 3 | Application assistant: checklist, tailored CV, letter outline, referee email drafts, questions when info is missing, encrypted document vault (`/docs`) | ✅ live |
-| 4 | Assisted form-filling with human checkpoints | planned |
+| 4 | Form helper: a cloud browser reads the real application form and sends an answer sheet (tap-to-copy) + a filled preview screenshot, with stop points for login, CAPTCHA, GPA, ID numbers, declarations, payment and final submit. Never submits. | ✅ live |
 
 ## How it works
 ```
@@ -31,6 +31,7 @@ Sites that block bots from their pages but publish feeds (Devpost, We Work Remot
 | You do | You get |
 |---|---|
 | **Apply** on an item | Checklist from the official page, a CV tailored to that page, a letter **outline** to write in your own words, and referee email drafts you send yourself. If something mandatory is missing (e.g. a required GPA), it pauses and asks you. |
+| **🧩 Prepare form answers** (after Apply) | Within ~20 min: every form field with your answer ready to copy, uploads to make, ⛔ stop points, and a preview screenshot. If it can't find the form, reply with the direct link. |
 | **Save / Skip / Not interested** | Status change, plus the ranking learns from it |
 | Send a scan or PDF | Stored **encrypted** in your vault; the bot asks what it is |
 | `/docs` | Your stored documents, each downloadable |
@@ -48,11 +49,12 @@ Sites that block bots from their pages but publish feeds (Devpost, We Work Remot
 | `src/apply/` | Application pack: requirements checklist, tailoring, letter outline, referee drafts |
 | `src/cv/` | CV generator (`npm run cv`) |
 | `src/vault/`, `src/lib/vault.ts` | Encrypted document vault (AES-256-GCM) |
+| `src/forms/`, `src/jobs/forms.ts` | Form helper (Playwright on GitHub Actions, `.github/workflows/forms.yml`) |
 | `src/web/`, `api/tracker.ts` | Tracker page |
 | `src/telegram/`, `api/telegram.ts` | Bot |
 | `src/jobs/` | `daily`, `digest`, `hourly`, `setup-telegram`, `reset-cache`, `vault-cli` |
 | `supabase/migrations/` | Database schema |
-| `test/` | 166 tests |
+| `test/` | 178 tests |
 
 ## Guarantees
 - **No invented facts.** Every fact is quoted from the official page (or the site's own feed, labelled). Missing facts show as unknown, and grades and dates are never guessed.

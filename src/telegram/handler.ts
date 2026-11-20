@@ -6,6 +6,7 @@ import { preparePack } from "../apply/pack.js";
 import { checklistText } from "../apply/requirements.js";
 import { DOC_TYPES, checklistDocs, deleteDocument, guessType, readDocument, storeDocument, type DocType, type StoredDoc } from "../vault/docs.js";
 import { downloadFile } from "./api.js";
+import { publishProfile } from "../lib/profile-sync.js";
 import { deadlineText, esc, formatEvidence } from "./format.js";
 import { LINK_DAYS, trackerLink } from "../web/tracker.js";
 
@@ -67,10 +68,16 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
   }
   if (String(chatId) !== String(owner)) return;
   const reply = (text: string, buttons?: Parameters<typeof sendMessage>[1]) => sendMessage(text, buttons, String(chatId));
+  await publishProfile(store).catch(() => {});
 
   if (u.callback_query) {
     const data = u.callback_query.data ?? "";
     if (data.startsWith("dt:") || data.startsWith("dg:")) return handleDocCallback(data, u.callback_query.id, String(chatId), store);
+    if (data.startsWith("fa:")) {
+      await queueForm(store, data.slice(3));
+      await answerCallback(u.callback_query.id, "Queued");
+      return reply("🧩 Queued. A cloud browser will read the form and send you an answer sheet within about 20 minutes. Nothing will be submitted.");
+    }
     const [action, key] = data.split(":");
     const row = key ? await store.get(key) : null;
     if (!row) return answerCallback(u.callback_query.id, "Item not found");
@@ -101,6 +108,12 @@ export async function handleUpdate(u: TgUpdate, store = new Store()) {
   const replyTo = u.message?.reply_to_message?.message_id;
   if (replyTo) {
     const q = await store.getSetting<{ key: string; item: string }>(`question:${replyTo}`);
+    if (q?.item === "form_url") {
+      const m = (u.message?.text ?? "").match(/https?:\/\/\S+/);
+      if (!m) return reply("Please reply with the full link (starting with https://).");
+      await queueForm(store, q.key, m[0]);
+      return reply("🧩 Got it — I'll read that form within about 20 minutes.");
+    }
     if (q) {
       const answer = (u.message?.text ?? "").trim().slice(0, 500);
       if (!answer) return reply("I couldn't read that answer — please reply with text.");
@@ -195,6 +208,9 @@ export async function sendApplicationPack(row: OppRow, chatId: string, store: St
   await sendMessage(head.join("\n"), [[{ text: "🔗 Open official page", url: row.official_url }]], chatId);
 
   for (const f of pack.files) await sendDocument(chatId, f.name, f.data);
+  if (!pack.noBots) {
+    await sendMessage("Want help with the form itself? I'll read the real application form and send you each field with your answer ready to copy.", [[{ text: "🧩 Prepare form answers", callback_data: `fa:${row.key}` }]], chatId);
+  }
   await send("📎 Above: your CV tailored to this page (re-ordered, nothing added) and a letter <b>outline</b>. Write the red parts in your own words.");
 
   if (pack.referees.length && pack.checklist.some((i) => i.id === "recommendation")) {
@@ -281,4 +297,12 @@ async function handleDocCallback(data: string, callbackId: string, chatId: strin
   if (!d) return answerCallback(callbackId, "Not found");
   await answerCallback(callbackId, "Sending…");
   return sendDocument(chatId, d.name, await readDocument(store.db, d.path));
+}
+
+/** Queue a form for the cloud browser (GitHub Actions picks it up within ~20 minutes). */
+async function queueForm(store: Store, key: string, url?: string) {
+  const queue = (await store.getSetting<{ key: string; url?: string; requested: string }[]>("form_queue")) ?? [];
+  const rest = queue.filter((r) => r.key !== key);
+  rest.push({ key, ...(url ? { url } : {}), requested: new Date().toISOString() });
+  await store.setSetting("form_queue", rest.slice(-10));
 }

@@ -1,0 +1,36 @@
+name: Form helper
+# Every 20 minutes: if you tapped "Prepare form answers", a headless browser reads that form
+# and sends you an answer sheet + preview. Exits in seconds when nothing is queued.
+# Never submits anything.
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: forms
+  cancel-in-progress: false
+
+jobs:
+  forms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      PROFILE_YAML_B64: ${{ secrets.PROFILE_YAML_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Anything queued?
+        id: check
+        run: npm run -s forms -- --check
+      - name: Install browser
+        if: steps.check.outputs.has_work == 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Read forms and send answer sheets
+        if: steps.check.outputs.has_work == 'true'
+        run: npm run forms

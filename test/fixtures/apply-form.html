@@ -1,0 +1,23 @@
+<!doctype html><html><head><title>Apply – Summer Research Internship</title></head><body>
+<h1>Summer Research Internship 2027 — Application</h1>
+<form action="/submit" method="post">
+  <label for="fn">First name *</label><input id="fn" name="first_name" required>
+  <label for="ln">Last name *</label><input id="ln" name="last_name" required>
+  <label>Email address <input type="email" name="email" required></label>
+  <label for="ph">Mobile phone</label><input id="ph" type="tel" name="phone">
+  <label for="dob">Date of birth</label><input id="dob" type="date" name="dob">
+  <label for="nat">Nationality</label>
+  <select id="nat" name="nationality"><option>Select…</option><option>Ghanaian</option><option>Kenyan</option><option>Nigerian</option></select>
+  <label for="uni">University</label><input id="uni" name="university">
+  <label for="deg">Degree programme</label><input id="deg" name="degree">
+  <label for="yr">Year of study</label><select id="yr" name="year"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+  <label for="gpa">Cumulative GPA *</label><input id="gpa" name="gpa" required>
+  <label for="gh">GitHub profile</label><input id="gh" type="url" name="github">
+  <fieldset><legend>Gender</legend><label><input type="radio" name="g" value="f">Female</label><label><input type="radio" name="g" value="m">Male</label></fieldset>
+  <label for="ppn">Passport number</label><input id="ppn" name="passport_no">
+  <label for="mot">Why do you want to join this programme? (max 2000 characters)</label><textarea id="mot" name="motivation" maxlength="2000"></textarea>
+  <label for="cv">Upload your CV (PDF)</label><input id="cv" type="file" name="cv">
+  <label for="tr">Upload academic transcript</label><input id="tr" type="file" name="transcript">
+  <label><input type="checkbox" name="decl" required> I declare that the information provided is true and correct.</label>
+  <button type="submit">Submit application</button>
+</form></body></html>

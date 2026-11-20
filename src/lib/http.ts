@@ -52,7 +52,7 @@ export function robotsAllows(disallow: string[], path: string): boolean {
   });
 }
 
-async function allowed(url: URL): Promise<boolean> {
+export async function allowed(url: URL): Promise<boolean> {
   if (!robotsCache.has(url.host)) {
     try {
       await throttle(url.host);
